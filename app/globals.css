@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Couleurs CSS supplémentaires accessibles partout */
+:root {
+  --canard: #00989D;
+  --canard-dark: #007479;
+  --jaune: #FCC33D;
+  --jaune-dark: #e0a920;
+  --anthracite: #2B3442;
+  --prune: #6B2468;
+}
