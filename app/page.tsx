@@ -4,9 +4,8 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-litup-dark via-litup-dark to-litup-teal/80" />
-        <div className="absolute inset-0 opacity-10">
+      <section className="relative overflow-hidden" style={{ backgroundColor: "#2B3442" }}>
+        <div className="absolute inset-0 opacity-20">
           <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-litup-gold blur-3xl" />
           <div className="absolute bottom-10 left-10 w-96 h-96 rounded-full bg-litup-teal blur-3xl" />
         </div>
@@ -16,11 +15,11 @@ export default function Home() {
             Laboratoire pédagogique Lit uP
           </p>
           <h1 className="text-3xl sm:text-5xl font-bold text-white leading-tight">
-            Des outils qui donnent le pouvoir d'agir
+            Des outils qui donnent le pouvoir d&apos;agir
             <br />
             <span className="text-litup-gold">aux jeunes comme aux équipes.</span>
           </h1>
-          <p className="mt-6 text-lg text-white/70 max-w-2xl mx-auto">
+          <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
             Des méthodes concrètes, testées sur le terrain, pour animer, libérer la parole,
             construire un collectif et accompagner les jeunes dans leurs projets.
           </p>
@@ -37,23 +36,23 @@ export default function Home() {
             {
               num: "01",
               title: "Professionnel·le",
-              desc: "Enseignant·e, conseiller·ère, éducateur·ice, formateur·ice. Accédez aux outils et ateliers pensés pour l'accompagnement structuré.",
+              desc: "Enseignant·e, conseiller·ère, éducateur·ice, formateur·ice. Accédez aux outils pensés pour l'accompagnement structuré.",
               href: "/bao",
-              color: "litup-teal",
+              accent: "#00989D",
             },
             {
               num: "02",
               title: "Pair·e aidant·e",
               desc: "Vous accompagnez vos pairs par l'expérience. Retrouvez les outils simples, éprouvés, pour faciliter la parole et l'action.",
               href: "/bao",
-              color: "litup-gold",
+              accent: "#FCC33E",
             },
             {
               num: "03",
               title: "Explorer librement",
               desc: "Parcourez l'ensemble de la boîte sans filtre préalable. Naviguez par étape, par objectif ou par clé d'engagement.",
               href: "/bao",
-              color: "litup-violet",
+              accent: "#6B2468",
             },
           ].map((card) => (
             <Link
@@ -63,7 +62,7 @@ export default function Home() {
                          border border-litup-dark/5 hover:border-litup-teal/30
                          transition-all duration-300 hover:-translate-y-1"
             >
-              <span className={`text-xs font-bold text-${card.color} tracking-wider`}>
+              <span className="text-xs font-bold tracking-wider" style={{ color: card.accent }}>
                 {card.num}
               </span>
               <h3 className="mt-2 text-lg font-bold text-litup-dark group-hover:text-litup-teal transition-colors">
@@ -108,7 +107,7 @@ export default function Home() {
           </h2>
           <p className="mt-3 text-white/60 max-w-lg mx-auto">
             Nos parcours guidés vous accompagnent pas à pas, de la première rencontre
-            à l'autonomie du groupe.
+            à l&apos;autonomie du groupe.
           </p>
           <Link
             href="/parcours"

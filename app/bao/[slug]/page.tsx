@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getFiches, getFicheBySlug, getClesByFiche } from "@/lib/supabase";
+import { getFiches, getFicheBySlug, getClesByFiche, formatDuree } from "@/lib/supabase";
 
 export async function generateStaticParams() {
   const fiches = await getFiches();
@@ -25,6 +25,7 @@ export default async function FicheDetailPage({
   }
 
   const cles = await getClesByFiche(fiche.id);
+  const duree = formatDuree(fiche);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -38,27 +39,30 @@ export default async function FicheDetailPage({
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-litup-dark">{fiche.titre}</h1>
-        {fiche.sous_titre && (
-          <p className="text-lg text-litup-dark/50 mt-1">{fiche.sous_titre}</p>
+        <h1 className="text-3xl font-bold text-litup-dark">{fiche.nom}</h1>
+        {fiche.intention && (
+          <p className="text-lg text-litup-dark/60 mt-2 italic">{fiche.intention}</p>
         )}
       </div>
 
       {/* Metadata bar */}
       <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-litup-dark/10 mb-8">
-        {fiche.duree_minutes && (
+        {duree && (
           <div className="text-sm">
             <span className="text-litup-dark/40">Durée :</span>{" "}
-            <span className="font-semibold">{fiche.duree_minutes} min</span>
+            <span className="font-semibold">{duree}</span>
           </div>
         )}
-        {fiche.nb_participants_min && (
+        {fiche.participants && (
           <div className="text-sm">
             <span className="text-litup-dark/40">Participants :</span>{" "}
-            <span className="font-semibold">
-              {fiche.nb_participants_min}
-              {fiche.nb_participants_max && `–${fiche.nb_participants_max}`}
-            </span>
+            <span className="font-semibold">{fiche.participants}</span>
+          </div>
+        )}
+        {fiche.format && (
+          <div className="text-sm">
+            <span className="text-litup-dark/40">Format :</span>{" "}
+            <span className="font-semibold">{fiche.format}</span>
           </div>
         )}
         {fiche.source && (
@@ -69,19 +73,19 @@ export default async function FicheDetailPage({
         )}
       </div>
 
-      {/* Description */}
-      <div className="prose prose-sm max-w-none mb-8">
-        <h2 className="text-lg font-bold text-litup-dark">Description</h2>
-        <p className="text-litup-dark/80 leading-relaxed whitespace-pre-line">
-          {fiche.description}
-        </p>
-      </div>
-
-      {/* Objectif */}
-      {fiche.objectif && (
+      {/* Pourquoi */}
+      {fiche.pourquoi && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Objectif</h2>
-          <p className="text-litup-dark/80">{fiche.objectif}</p>
+          <h2 className="text-lg font-bold text-litup-dark mb-2">Pourquoi cet outil ?</h2>
+          <p className="text-litup-dark/80 leading-relaxed whitespace-pre-line">{fiche.pourquoi}</p>
+        </div>
+      )}
+
+      {/* Objectifs */}
+      {fiche.objectifs && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-litup-dark mb-2">Objectifs</h2>
+          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.objectifs}</p>
         </div>
       )}
 
@@ -89,7 +93,31 @@ export default async function FicheDetailPage({
       {fiche.materiel && (
         <div className="mb-8">
           <h2 className="text-lg font-bold text-litup-dark mb-2">Matériel</h2>
-          <p className="text-litup-dark/80">{fiche.materiel}</p>
+          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.materiel}</p>
+        </div>
+      )}
+
+      {/* Déroulé */}
+      {fiche.deroule && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-litup-dark mb-2">Déroulé</h2>
+          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.deroule}</p>
+        </div>
+      )}
+
+      {/* Conseils */}
+      {fiche.conseils && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-litup-dark mb-2">Conseils</h2>
+          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.conseils}</p>
+        </div>
+      )}
+
+      {/* Variantes */}
+      {fiche.variantes && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-litup-dark mb-2">Variantes</h2>
+          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.variantes}</p>
         </div>
       )}
 
@@ -103,7 +131,11 @@ export default async function FicheDetailPage({
             {cles.map((cle) => (
               <span
                 key={cle.id}
-                className="text-sm px-3 py-1 rounded-full bg-litup-teal/10 text-litup-teal font-medium"
+                className="text-sm px-3 py-1 rounded-full font-medium"
+                style={{
+                  backgroundColor: cle.couleur_hex ? `${cle.couleur_hex}18` : undefined,
+                  color: cle.couleur_hex || undefined,
+                }}
               >
                 {cle.nom}
               </span>

@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { getParcours, getParcoursBySlug, getFichesByParcours } from "@/lib/supabase";
+import { getParcours, getParcoursBySlug, getFichesByParcours, slugify, formatDuree } from "@/lib/supabase";
 
 export async function generateStaticParams() {
   const parcours = await getParcours();
-  return parcours.map((p) => ({ slug: p.slug }));
+  return parcours.map((p) => ({ slug: slugify(p.titre) }));
 }
 
 export default async function ParcoursDetailPage({
@@ -38,51 +38,62 @@ export default async function ParcoursDetailPage({
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-litup-dark">{parcours.titre}</h1>
+        <h1 className="text-3xl font-bold text-litup-dark">
+          {parcours.emoji && <span className="mr-2">{parcours.emoji}</span>}
+          {parcours.titre}
+        </h1>
         {parcours.description && (
           <p className="text-litup-dark/60 mt-2">{parcours.description}</p>
         )}
-        <div className="flex gap-4 mt-3 text-sm text-litup-dark/40">
-          {parcours.public_cible && <span>Public : {parcours.public_cible}</span>}
-          {parcours.duree_estimee && <span>Durée estimée : {parcours.duree_estimee}</span>}
-        </div>
       </div>
 
       {/* Fiches timeline */}
-      <div className="space-y-0">
-        {fiches.map((fiche, i) => (
-          <div key={fiche.id} className="flex gap-4">
-            {/* Timeline connector */}
-            <div className="flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-litup-teal text-white 
-                            flex items-center justify-center text-sm font-bold shrink-0">
-                {i + 1}
+      {fiches.length === 0 ? (
+        <p className="text-litup-dark/40 text-center py-12">
+          Aucune fiche associée à ce parcours.
+        </p>
+      ) : (
+        <div className="space-y-0">
+          {fiches.map((fiche, i) => (
+            <div key={fiche.id} className="flex gap-4">
+              {/* Timeline connector */}
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-8 h-8 rounded-full text-white 
+                              flex items-center justify-center text-sm font-bold shrink-0"
+                  style={{ backgroundColor: parcours.couleur_hex || "#00989D" }}
+                >
+                  {i + 1}
+                </div>
+                {i < fiches.length - 1 && (
+                  <div className="w-0.5 flex-1 bg-litup-teal/20 my-1" />
+                )}
               </div>
-              {i < fiches.length - 1 && (
-                <div className="w-0.5 flex-1 bg-litup-teal/20 my-1" />
-              )}
-            </div>
 
-            {/* Card */}
-            <Link
-              href={`/bao/${fiche.slug}`}
-              className="group flex-1 bg-white rounded-xl border border-litup-dark/10
-                         hover:border-litup-teal/30 hover:shadow-md
-                         transition-all duration-300 p-4 mb-4"
-            >
-              <h3 className="font-bold text-litup-dark group-hover:text-litup-teal transition-colors">
-                {fiche.titre}
-              </h3>
-              <p className="text-sm text-litup-dark/60 mt-1 line-clamp-2">
-                {fiche.description}
-              </p>
-              <div className="flex items-center gap-3 mt-2 text-xs text-litup-dark/40">
-                {fiche.duree_minutes && <span>{fiche.duree_minutes} min</span>}
-              </div>
-            </Link>
-          </div>
-        ))}
-      </div>
+              {/* Card */}
+              <Link
+                href={`/bao/${fiche.slug}`}
+                className="group flex-1 bg-white rounded-xl border border-litup-dark/10
+                           hover:border-litup-teal/30 hover:shadow-md
+                           transition-all duration-300 p-4 mb-4"
+              >
+                <h3 className="font-bold text-litup-dark group-hover:text-litup-teal transition-colors">
+                  {fiche.nom}
+                </h3>
+                {fiche.intention && (
+                  <p className="text-sm text-litup-dark/60 mt-1 line-clamp-2 italic">
+                    {fiche.intention}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 mt-2 text-xs text-litup-dark/40">
+                  {formatDuree(fiche) && <span>{formatDuree(fiche)}</span>}
+                  {fiche.format && <span>{fiche.format}</span>}
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

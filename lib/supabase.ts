@@ -1,53 +1,68 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ---------- Types ----------
+// ---------- Types (vrais schémas Supabase) ----------
 
 export interface Fiche {
   id: string;
   slug: string;
-  titre: string;
-  sous_titre: string | null;
-  description: string;
-  objectif: string | null;
-  duree_minutes: number | null;
-  nb_participants_min: number | null;
-  nb_participants_max: number | null;
+  nom: string;
+  etape_id: string | null;
+  duree_min: number | null;
+  duree_max: number | null;
+  duree_libre: string | null;
+  format: string | null;
+  participants: string | null;
   materiel: string | null;
+  pour_qui: string | null;
+  public_pro_pair: string | null;
+  type_outil: string | null;
+  intention: string | null;
+  pourquoi: string | null;
+  objectifs: string | null;
+  materiel_liste: string | null;
+  deroule: string | null;
+  conseils: string | null;
+  variantes: string | null;
   source: string | null;
+  source_a_valider: boolean | null;
+  validation_pedagogique_status: string | null;
+  publie: boolean | null;
   pdf_url: string | null;
-  image_url: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 export interface Cle {
   id: string;
-  slug: string;
+  code: string;
   nom: string;
   description: string | null;
-  icone: string | null;
+  description_longue: string | null;
+  couleur_hex: string | null;
   ordre: number;
 }
 
 export interface Etape {
   id: string;
-  slug: string;
+  code: string;
   nom: string;
   description: string | null;
+  description_longue: string | null;
+  couleur_hex: string | null;
   ordre: number;
 }
 
 export interface Parcours {
   id: string;
-  slug: string;
   titre: string;
   description: string | null;
-  public_cible: string | null;
-  duree_estimee: string | null;
+  emoji: string | null;
+  couleur_hex: string | null;
   ordre: number;
 }
 
@@ -57,8 +72,12 @@ export async function getFiches(): Promise<Fiche[]> {
   const { data, error } = await supabase
     .from("fiches")
     .select("*")
-    .order("titre");
-  if (error) throw error;
+    .eq("publie", true)
+    .order("nom");
+  if (error) {
+    console.error("Erreur getFiches:", error.message);
+    return [];
+  }
   return data || [];
 }
 
@@ -77,7 +96,10 @@ export async function getCles(): Promise<Cle[]> {
     .from("cles")
     .select("*")
     .order("ordre");
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur getCles:", error.message);
+    return [];
+  }
   return data || [];
 }
 
@@ -86,7 +108,10 @@ export async function getEtapes(): Promise<Etape[]> {
     .from("etapes_parcours")
     .select("*")
     .order("ordre");
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur getEtapes:", error.message);
+    return [];
+  }
   return data || [];
 }
 
@@ -95,17 +120,11 @@ export async function getClesByFiche(ficheId: string): Promise<Cle[]> {
     .from("fiches_cles")
     .select("cle_id, cles(*)")
     .eq("fiche_id", ficheId);
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur getClesByFiche:", error.message);
+    return [];
+  }
   return (data || []).map((d: any) => d.cles).filter(Boolean);
-}
-
-export async function getFichesByCle(cleId: string): Promise<Fiche[]> {
-  const { data, error } = await supabase
-    .from("fiches_cles")
-    .select("fiche_id, fiches(*)")
-    .eq("cle_id", cleId);
-  if (error) throw error;
-  return (data || []).map((d: any) => d.fiches).filter(Boolean);
 }
 
 export async function getParcours(): Promise<Parcours[]> {
@@ -113,15 +132,32 @@ export async function getParcours(): Promise<Parcours[]> {
     .from("parcours_guides")
     .select("*")
     .order("ordre");
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur getParcours:", error.message);
+    return [];
+  }
   return data || [];
 }
 
 export async function getParcoursBySlug(slug: string): Promise<Parcours | null> {
+  // parcours_guides n'a pas de slug, on cherche par titre transformé
+  // ou on peut chercher par id. Pour l'instant on cherche par titre encodé.
   const { data, error } = await supabase
     .from("parcours_guides")
     .select("*")
-    .eq("slug", slug)
+    .order("ordre");
+  if (error) return null;
+  const match = (data || []).find(
+    (p: any) => slugify(p.titre) === slug
+  );
+  return match || null;
+}
+
+export async function getParcoursById(id: string): Promise<Parcours | null> {
+  const { data, error } = await supabase
+    .from("parcours_guides")
+    .select("*")
+    .eq("id", id)
     .single();
   if (error) return null;
   return data;
@@ -133,6 +169,27 @@ export async function getFichesByParcours(parcoursId: string): Promise<Fiche[]> 
     .select("fiche_id, ordre, fiches(*)")
     .eq("parcours_id", parcoursId)
     .order("ordre");
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur getFichesByParcours:", error.message);
+    return [];
+  }
   return (data || []).map((d: any) => d.fiches).filter(Boolean);
+}
+
+// ---------- Helpers ----------
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export function formatDuree(fiche: Fiche): string | null {
+  if (fiche.duree_libre) return fiche.duree_libre;
+  if (fiche.duree_min && fiche.duree_max) return `${fiche.duree_min}–${fiche.duree_max} min`;
+  if (fiche.duree_min) return `${fiche.duree_min} min`;
+  return null;
 }

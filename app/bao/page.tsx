@@ -6,7 +6,7 @@ import FicheCard from "@/components/FicheCard";
 import FilterBar from "@/components/FilterBar";
 
 interface FicheWithCles extends Fiche {
-  cles: { nom: string; slug: string }[];
+  fichesCles: Cle[];
 }
 
 export default function BaoPage() {
@@ -28,10 +28,7 @@ export default function BaoPage() {
         const fichesWithCles = await Promise.all(
           fichesData.map(async (f) => {
             const ficheCles = await getClesByFiche(f.id);
-            return {
-              ...f,
-              cles: ficheCles.map((c) => ({ nom: c.nom, slug: c.slug })),
-            };
+            return { ...f, fichesCles: ficheCles };
           })
         );
 
@@ -50,15 +47,13 @@ export default function BaoPage() {
   const filtered = fiches.filter((f) => {
     const matchSearch =
       !searchQuery ||
-      f.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.description.toLowerCase().includes(searchQuery.toLowerCase());
+      f.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (f.intention || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (f.pourquoi || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchCle =
       !activeCle ||
-      f.cles.some((c) => {
-        const matchingCle = cles.find((cl) => cl.id === activeCle);
-        return matchingCle && c.slug === matchingCle.slug;
-      });
+      f.fichesCles.some((c) => c.id === activeCle);
 
     return matchSearch && matchCle;
   });
@@ -113,7 +108,7 @@ export default function BaoPage() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((fiche) => (
-            <FicheCard key={fiche.id} fiche={fiche} cles={fiche.cles} />
+            <FicheCard key={fiche.id} fiche={fiche} cles={fiche.fichesCles} />
           ))}
         </div>
       )}
