@@ -2,12 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Couleurs CSS supplémentaires accessibles partout */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
+
 :root {
-  --canard: #00989D;
-  --canard-dark: #007479;
-  --jaune: #FCC33D;
-  --jaune-dark: #e0a920;
-  --anthracite: #2B3442;
-  --prune: #6B2468;
+  --litup-dark: #2B3442;
+  --litup-teal: #00989D;
+  --litup-gold: #FCC33E;
+  --litup-violet: #6B2468;
+  --litup-light: #F6F6F8;
+}
+
+body {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--litup-dark);
+  background: var(--litup-light);
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--litup-teal);
+  outline-offset: 2px;
 }

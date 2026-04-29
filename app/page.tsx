@@ -1,164 +1,124 @@
-import { createClient } from '@/lib/supabase/server';
+import Link from "next/link";
 
-export const dynamic = 'force-dynamic';
-
-export default async function Home() {
-  // Test de connexion à Supabase
-  let supabaseStatus = 'unknown';
-  let errorMessage: string | null = null;
-  let tablesFound: string[] = [];
-
-  try {
-    const supabase = await createClient();
-
-    // Tente de récupérer les tables (juste pour voir si la connexion marche)
-    const { error } = await supabase.from('profiles').select('id').limit(0);
-
-    if (error) {
-      // Si on a une erreur RLS, c'est BON SIGNE : la connexion marche !
-      // (Les tables existent mais on n'est pas authentifié)
-      if (error.code === 'PGRST301' || error.message.includes('RLS') || error.message.includes('policy')) {
-        supabaseStatus = 'connected_rls_active';
-      } else if (error.message.includes('does not exist')) {
-        supabaseStatus = 'connected_no_tables';
-        errorMessage = 'Connexion OK mais table profiles introuvable.';
-      } else {
-        supabaseStatus = 'error';
-        errorMessage = error.message;
-      }
-    } else {
-      supabaseStatus = 'connected';
-      tablesFound = ['profiles'];
-    }
-  } catch (e) {
-    supabaseStatus = 'error';
-    errorMessage = e instanceof Error ? e.message : 'Erreur inconnue';
-  }
-
+export default function Home() {
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full">
-        {/* Bandeau Lit uP */}
-        <div className="bg-canard text-white rounded-t-2xl p-6 flex items-baseline gap-3">
-          <span className="text-2xl font-bold">Lit uP</span>
-          <span className="text-white text-lg font-bold">la boîte à outils</span>
-          <span className="ml-auto text-sm font-bold opacity-90">
-            🚧 Construction en cours
-          </span>
+    <>
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-litup-dark via-litup-dark to-litup-teal/80" />
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-litup-gold blur-3xl" />
+          <div className="absolute bottom-10 left-10 w-96 h-96 rounded-full bg-litup-teal blur-3xl" />
         </div>
-
-        {/* Contenu */}
-        <div className="bg-white rounded-b-2xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-anthracite mb-2">
-            BAO V6 — Phase 1 ✓
-          </h1>
-          <p className="text-anthracite-soft mb-6">
-            Mise en place de l'infrastructure Vercel + Supabase.
+        
+        <div className="relative max-w-4xl mx-auto px-4 py-24 sm:py-32 text-center">
+          <p className="text-litup-gold font-semibold text-sm tracking-widest uppercase mb-6">
+            Laboratoire pédagogique Lit uP
           </p>
-
-          <div className="bg-jaune-light/50 border-l-4 border-jaune-dark rounded-r-lg p-4 mb-6">
-            <p className="text-sm">
-              <strong>Cette page est temporaire.</strong> Elle sert à vérifier
-              que Vercel et Supabase communiquent bien. Quand tout sera vert
-              ci-dessous, on passera à la phase 2 (migration du contenu) puis
-              à la phase 3 (authentification).
-            </p>
-          </div>
-
-          {/* Tests de connexion */}
-          <div className="space-y-3">
-            <h2 className="text-xl font-bold text-canard-dark mb-3">
-              État de la connexion
-            </h2>
-
-            <StatusItem
-              label="Frontend Next.js"
-              status="ok"
-              detail="Cette page s'affiche, donc Vercel a bien déployé l'app."
-            />
-
-            <StatusItem
-              label="Variables d'environnement"
-              status={
-                process.env.NEXT_PUBLIC_SUPABASE_URL ? 'ok' : 'error'
-              }
-              detail={
-                process.env.NEXT_PUBLIC_SUPABASE_URL
-                  ? `URL configurée : ${process.env.NEXT_PUBLIC_SUPABASE_URL}`
-                  : 'NEXT_PUBLIC_SUPABASE_URL manquante'
-              }
-            />
-
-            <StatusItem
-              label="Connexion Supabase"
-              status={
-                supabaseStatus === 'connected' ||
-                supabaseStatus === 'connected_rls_active'
-                  ? 'ok'
-                  : supabaseStatus === 'connected_no_tables'
-                  ? 'warning'
-                  : 'error'
-              }
-              detail={
-                supabaseStatus === 'connected_rls_active'
-                  ? 'Connexion établie. Les politiques RLS protègent les données (comportement normal).'
-                  : supabaseStatus === 'connected'
-                  ? `Tables accessibles : ${tablesFound.join(', ')}`
-                  : errorMessage || 'État inconnu'
-              }
-            />
-          </div>
-
-          {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-anthracite-soft">
-            <p>
-              <strong>Prochaine étape :</strong> migration du contenu actuel de la
-              BAO (30 fiches, 30 PDF, parcours guidés) vers cette nouvelle
-              architecture.
-            </p>
-          </div>
+          <h1 className="text-3xl sm:text-5xl font-bold text-white leading-tight">
+            Des outils qui donnent le pouvoir d'agir
+            <br />
+            <span className="text-litup-gold">aux jeunes comme aux équipes.</span>
+          </h1>
+          <p className="mt-6 text-lg text-white/70 max-w-2xl mx-auto">
+            Des méthodes concrètes, testées sur le terrain, pour animer, libérer la parole,
+            construire un collectif et accompagner les jeunes dans leurs projets.
+          </p>
+          <p className="mt-2 text-sm text-white/50">
+            Gratuite, ouverte, faite pour être partagée.
+          </p>
         </div>
+      </section>
 
-        {/* Signature */}
-        <p className="text-center mt-6 font-caveat text-xl text-canard-dark">
-          Gratuite, ouverte, faite pour être partagée.
-        </p>
-      </div>
-    </main>
-  );
-}
-
-function StatusItem({
-  label,
-  status,
-  detail,
-}: {
-  label: string;
-  status: 'ok' | 'warning' | 'error';
-  detail: string;
-}) {
-  const icons = {
-    ok: '✅',
-    warning: '⚠️',
-    error: '❌',
-  };
-  const colors = {
-    ok: 'border-green-300 bg-green-50',
-    warning: 'border-jaune-dark bg-jaune-light/50',
-    error: 'border-red-300 bg-red-50',
-  };
-
-  return (
-    <div className={`border rounded-lg p-3 ${colors[status]}`}>
-      <div className="flex items-start gap-3">
-        <span className="text-xl flex-shrink-0">{icons[status]}</span>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-anthracite">{label}</div>
-          <div className="text-sm text-anthracite-soft mt-1 break-all">
-            {detail}
-          </div>
+      {/* 3 portes d'entrée */}
+      <section className="max-w-5xl mx-auto px-4 -mt-8 relative z-10">
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            {
+              num: "01",
+              title: "Professionnel·le",
+              desc: "Enseignant·e, conseiller·ère, éducateur·ice, formateur·ice. Accédez aux outils et ateliers pensés pour l'accompagnement structuré.",
+              href: "/bao",
+              color: "litup-teal",
+            },
+            {
+              num: "02",
+              title: "Pair·e aidant·e",
+              desc: "Vous accompagnez vos pairs par l'expérience. Retrouvez les outils simples, éprouvés, pour faciliter la parole et l'action.",
+              href: "/bao",
+              color: "litup-gold",
+            },
+            {
+              num: "03",
+              title: "Explorer librement",
+              desc: "Parcourez l'ensemble de la boîte sans filtre préalable. Naviguez par étape, par objectif ou par clé d'engagement.",
+              href: "/bao",
+              color: "litup-violet",
+            },
+          ].map((card) => (
+            <Link
+              key={card.num}
+              href={card.href}
+              className="group bg-white rounded-xl p-6 shadow-lg hover:shadow-xl 
+                         border border-litup-dark/5 hover:border-litup-teal/30
+                         transition-all duration-300 hover:-translate-y-1"
+            >
+              <span className={`text-xs font-bold text-${card.color} tracking-wider`}>
+                {card.num}
+              </span>
+              <h3 className="mt-2 text-lg font-bold text-litup-dark group-hover:text-litup-teal transition-colors">
+                {card.title}
+              </h3>
+              <p className="mt-2 text-sm text-litup-dark/60 leading-relaxed">
+                {card.desc}
+              </p>
+              <span className="inline-block mt-4 text-sm font-semibold text-litup-teal 
+                               group-hover:translate-x-1 transition-transform">
+                Entrer →
+              </span>
+            </Link>
+          ))}
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Stats */}
+      <section className="max-w-4xl mx-auto px-4 py-20">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          {[
+            { value: "30", label: "outils référencés" },
+            { value: "9", label: "clés d'engagement" },
+            { value: "10", label: "étapes de parcours" },
+            { value: "6", label: "parcours guidés" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <div className="text-3xl sm:text-4xl font-bold text-litup-teal">
+                {stat.value}
+              </div>
+              <div className="text-sm text-litup-dark/50 mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA parcours */}
+      <section className="max-w-4xl mx-auto px-4 pb-20">
+        <div className="bg-litup-dark rounded-2xl p-8 sm:p-12 text-center">
+          <h2 className="text-2xl font-bold text-white">
+            Vous ne savez pas par où commencer ?
+          </h2>
+          <p className="mt-3 text-white/60 max-w-lg mx-auto">
+            Nos parcours guidés vous accompagnent pas à pas, de la première rencontre
+            à l'autonomie du groupe.
+          </p>
+          <Link
+            href="/parcours"
+            className="inline-block mt-6 px-6 py-3 bg-litup-gold text-litup-dark 
+                       font-bold rounded-lg hover:bg-litup-gold/90 transition-colors"
+          >
+            Découvrir les parcours
+          </Link>
+        </div>
+      </section>
+    </>
   );
 }

@@ -1,9 +1,12 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: 'Boîte à outils Lit uP',
-  description: 'Des outils pédagogiques qui donnent le pouvoir d\'agir — aux jeunes comme aux équipes.',
+  title: "Boîte à Outils — Lit uP",
+  description:
+    "Des outils qui donnent le pouvoir d'agir — aux jeunes comme aux équipes. Ressources pédagogiques pour l'accompagnement des jeunes 14-25 ans.",
 };
 
 export default function RootLayout({
@@ -13,23 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <head>
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-sans bg-[#F6F6F8] text-anthracite antialiased">
-        {children}
+      <body className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );
