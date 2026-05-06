@@ -19,19 +19,13 @@ export default function BaoPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [fichesData, clesData] = await Promise.all([
-          getFiches(),
-          getCles(),
-        ]);
-
-        // Load clés for each fiche
+        const [fichesData, clesData] = await Promise.all([getFiches(), getCles()]);
         const fichesWithCles = await Promise.all(
           fichesData.map(async (f) => {
             const ficheCles = await getClesByFiche(f.id);
             return { ...f, fichesCles: ficheCles };
           })
         );
-
         setFiches(fichesWithCles);
         setCles(clesData);
       } catch (err) {
@@ -43,65 +37,45 @@ export default function BaoPage() {
     loadData();
   }, []);
 
-  // Filter logic
   const filtered = fiches.filter((f) => {
-    const matchSearch =
-      !searchQuery ||
+    const matchSearch = !searchQuery ||
       f.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (f.intention || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (f.pourquoi || "").toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchCle =
-      !activeCle ||
-      f.fichesCles.some((c) => c.id === activeCle);
-
+    const matchCle = !activeCle || f.fichesCles.some((c) => c.id === activeCle);
     return matchSearch && matchCle;
   });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-litup-dark">
-          La boîte à outils
-        </h1>
-        <p className="mt-2 text-litup-dark/60">
+        <h1 className="text-3xl font-bold" style={{ color: "#2B3442" }}>La boîte à outils</h1>
+        <p className="mt-2" style={{ color: "rgba(43,52,66,0.55)" }}>
           {fiches.length} outils pour animer, libérer la parole et accompagner les jeunes.
         </p>
       </div>
 
-      {/* Filters */}
-      <FilterBar
-        cles={cles}
-        activeCle={activeCle}
-        onCleChange={setActiveCle}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      <FilterBar cles={cles} activeCle={activeCle} onCleChange={setActiveCle}
+        searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-      {/* Results count */}
-      <p className="text-sm text-litup-dark/50 mt-6 mb-4">
+      <p className="text-sm mt-6 mb-4" style={{ color: "rgba(43,52,66,0.45)" }}>
         {filtered.length} outil{filtered.length !== 1 ? "s" : ""} trouvé{filtered.length !== 1 ? "s" : ""}
       </p>
 
-      {/* Grid */}
       {loading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl border border-litup-dark/10 p-5 animate-pulse"
-            >
-              <div className="h-1 bg-litup-dark/10 rounded mb-4" />
-              <div className="h-5 bg-litup-dark/10 rounded w-3/4 mb-2" />
-              <div className="h-4 bg-litup-dark/5 rounded w-1/2 mb-4" />
-              <div className="h-3 bg-litup-dark/5 rounded w-full mb-1" />
-              <div className="h-3 bg-litup-dark/5 rounded w-5/6" />
+            <div key={i} className="bg-white rounded-xl border p-5 animate-pulse" style={{ borderColor: "rgba(43,52,66,0.1)" }}>
+              <div className="h-1 bg-gray-200 rounded mb-4" />
+              <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-1/2 mb-4" />
+              <div className="h-3 bg-gray-100 rounded w-full mb-1" />
+              <div className="h-3 bg-gray-100 rounded w-5/6" />
             </div>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-litup-dark/40">
+        <div className="text-center py-16" style={{ color: "rgba(43,52,66,0.35)" }}>
           <p className="text-lg">Aucun outil trouvé.</p>
           <p className="text-sm mt-1">Essayez un autre mot-clé ou changez de filtre.</p>
         </div>

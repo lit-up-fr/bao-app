@@ -1,13 +1,9 @@
 export default function Footer() {
   return (
-    <footer className="border-t border-litup-dark/10 bg-white mt-auto">
-      <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-litup-dark/50">
-        <p>
-          Gratuite, ouverte, faite pour être partagée.
-        </p>
-        <p className="mt-1">
-          © {new Date().getFullYear()} Lit uP — Laboratoire pédagogique
-        </p>
+    <footer className="border-t mt-auto" style={{ borderColor: "rgba(43,52,66,0.1)", backgroundColor: "white" }}>
+      <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm" style={{ color: "rgba(43,52,66,0.4)" }}>
+        <p>Gratuite, ouverte, faite pour être partagée.</p>
+        <p className="mt-1">© {new Date().getFullYear()} Lit uP — Laboratoire pédagogique</p>
       </div>
     </footer>
   );
