@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600;1,700&family=Caveat:wght@400;600;700&display=swap');
 
 :root {
   --dark: #2B3442;
@@ -10,14 +10,15 @@
   --gold: #FCC33E;
   --violet: #6B2468;
   --light: #F6F6F8;
-  --white: #ffffff;
 }
 
 body {
   font-family: 'Source Sans 3', system-ui, sans-serif;
-  color: var(--dark);
-  background: var(--light);
+  color: #2B3442;
+  background: #F6F6F8;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
 html {
@@ -25,37 +26,28 @@ html {
 }
 
 *:focus-visible {
-  outline: 2px solid var(--teal);
+  outline: 2px solid #00989D;
   outline-offset: 2px;
 }
 
-/* Utility classes that work in production */
-.bg-dark { background-color: var(--dark); }
-.bg-teal { background-color: var(--teal); }
-.bg-gold { background-color: var(--gold); }
-.bg-violet { background-color: var(--violet); }
-.bg-light { background-color: var(--light); }
-
-.text-dark { color: var(--dark); }
-.text-teal { color: var(--teal); }
-.text-gold { color: var(--gold); }
-.text-violet { color: var(--violet); }
-
-.border-teal { border-color: var(--teal); }
-
-.hover-teal:hover { color: var(--teal); }
-.hover-border-teal:hover { border-color: var(--teal); }
-
-/* Gradient bar for cards */
-.card-gradient {
-  background: linear-gradient(90deg, var(--teal), var(--gold));
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
-/* Tag styles */
-.tag {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+h1 { font-weight: 700; }
+h2 { font-weight: 700; }
+h3 { font-weight: 700; }
+
+p {
+  line-height: 1.7;
+}
+
+a, button {
+  transition: all 0.2s ease;
+}
+
+::selection {
+  background: rgba(0, 152, 157, 0.15);
+  color: #2B3442;
 }

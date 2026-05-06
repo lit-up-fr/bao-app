@@ -193,3 +193,14 @@ export function formatDuree(fiche: Fiche): string | null {
   if (fiche.duree_min) return `${fiche.duree_min} min`;
   return null;
 }
+
+// Additional helper
+export async function getEtapeById(etapeId: string): Promise<Etape | null> {
+  const { data, error } = await supabase
+    .from("etapes_parcours")
+    .select("*")
+    .eq("id", etapeId)
+    .single();
+  if (error) return null;
+  return data;
+}
