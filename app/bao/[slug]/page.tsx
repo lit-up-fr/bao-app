@@ -1,142 +1,102 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getFiches, getFicheBySlug, getClesByFiche, formatDuree } from "@/lib/supabase";
+import { getFicheBySlug, getClesByFiche, formatDuree, type Fiche, type Cle } from "@/lib/supabase";
 
-export async function generateStaticParams() {
-  const fiches = await getFiches();
-  return fiches.map((f) => ({ slug: f.slug }));
-}
+export default function FicheDetailPage({ params }: { params: { slug: string } }) {
+  const [fiche, setFiche] = useState<Fiche | null>(null);
+  const [cles, setCles] = useState<Cle[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function FicheDetailPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const fiche = await getFicheBySlug(params.slug);
+  useEffect(() => {
+    async function load() {
+      const f = await getFicheBySlug(params.slug);
+      if (f) {
+        setFiche(f);
+        const c = await getClesByFiche(f.id);
+        setCles(c);
+      }
+      setLoading(false);
+    }
+    load();
+  }, [params.slug]);
+
+  if (loading) return <div className="max-w-3xl mx-auto px-4 py-20 text-center">Chargement...</div>;
 
   if (!fiche) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold text-litup-dark">Fiche introuvable</h1>
-        <Link href="/bao" className="text-litup-teal mt-4 inline-block hover:underline">
+        <h1 className="text-2xl font-bold" style={{ color: "#2B3442" }}>Fiche introuvable</h1>
+        <Link href="/bao" className="mt-4 inline-block hover:underline" style={{ color: "#00989D" }}>
           ← Retour à la boîte à outils
         </Link>
       </div>
     );
   }
 
-  const cles = await getClesByFiche(fiche.id);
   const duree = formatDuree(fiche);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      {/* Breadcrumb */}
-      <Link
-        href="/bao"
-        className="text-sm text-litup-teal hover:underline inline-flex items-center gap-1 mb-6"
-      >
+      <Link href="/bao" className="text-sm hover:underline inline-flex items-center gap-1 mb-6" style={{ color: "#00989D" }}>
         ← Retour aux outils
       </Link>
 
-      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-litup-dark">{fiche.nom}</h1>
-        {fiche.intention && (
-          <p className="text-lg text-litup-dark/60 mt-2 italic">{fiche.intention}</p>
-        )}
+        <h1 className="text-3xl font-bold" style={{ color: "#2B3442" }}>{fiche.nom}</h1>
+        {fiche.intention && <p className="text-lg mt-2 italic" style={{ color: "#2B344299" }}>{fiche.intention}</p>}
       </div>
 
-      {/* Metadata bar */}
-      <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-litup-dark/10 mb-8">
-        {duree && (
-          <div className="text-sm">
-            <span className="text-litup-dark/40">Durée :</span>{" "}
-            <span className="font-semibold">{duree}</span>
-          </div>
-        )}
-        {fiche.participants && (
-          <div className="text-sm">
-            <span className="text-litup-dark/40">Participants :</span>{" "}
-            <span className="font-semibold">{fiche.participants}</span>
-          </div>
-        )}
-        {fiche.format && (
-          <div className="text-sm">
-            <span className="text-litup-dark/40">Format :</span>{" "}
-            <span className="font-semibold">{fiche.format}</span>
-          </div>
-        )}
-        {fiche.source && (
-          <div className="text-sm">
-            <span className="text-litup-dark/40">Source :</span>{" "}
-            <span className="font-semibold">{fiche.source}</span>
-          </div>
-        )}
+      <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-gray-200 mb-8 text-sm">
+        {duree && <div><span style={{ color: "#2B344266" }}>Durée : </span><span className="font-semibold">{duree}</span></div>}
+        {fiche.participants && <div><span style={{ color: "#2B344266" }}>Participants : </span><span className="font-semibold">{fiche.participants}</span></div>}
+        {fiche.format && <div><span style={{ color: "#2B344266" }}>Format : </span><span className="font-semibold">{fiche.format}</span></div>}
+        {fiche.source && <div><span style={{ color: "#2B344266" }}>Source : </span><span className="font-semibold">{fiche.source}</span></div>}
       </div>
 
-      {/* Pourquoi */}
       {fiche.pourquoi && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Pourquoi cet outil ?</h2>
-          <p className="text-litup-dark/80 leading-relaxed whitespace-pre-line">{fiche.pourquoi}</p>
+          <h2 className="text-lg font-bold mb-2" style={{ color: "#2B3442" }}>Pourquoi cet outil ?</h2>
+          <p className="leading-relaxed whitespace-pre-line" style={{ color: "#2B3442CC" }}>{fiche.pourquoi}</p>
         </div>
       )}
 
-      {/* Objectifs */}
       {fiche.objectifs && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Objectifs</h2>
-          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.objectifs}</p>
+          <h2 className="text-lg font-bold mb-2" style={{ color: "#2B3442" }}>Objectifs</h2>
+          <p className="whitespace-pre-line" style={{ color: "#2B3442CC" }}>{typeof fiche.objectifs === 'string' ? fiche.objectifs : JSON.stringify(fiche.objectifs)}</p>
         </div>
       )}
 
-      {/* Matériel */}
-      {fiche.materiel && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Matériel</h2>
-          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.materiel}</p>
-        </div>
-      )}
-
-      {/* Déroulé */}
       {fiche.deroule && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Déroulé</h2>
-          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.deroule}</p>
+          <h2 className="text-lg font-bold mb-2" style={{ color: "#2B3442" }}>Déroulé</h2>
+          <p className="whitespace-pre-line" style={{ color: "#2B3442CC" }}>{typeof fiche.deroule === 'string' ? fiche.deroule : JSON.stringify(fiche.deroule)}</p>
         </div>
       )}
 
-      {/* Conseils */}
       {fiche.conseils && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Conseils</h2>
-          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.conseils}</p>
+          <h2 className="text-lg font-bold mb-2" style={{ color: "#2B3442" }}>Conseils</h2>
+          <p className="whitespace-pre-line" style={{ color: "#2B3442CC" }}>{typeof fiche.conseils === 'string' ? fiche.conseils : JSON.stringify(fiche.conseils)}</p>
         </div>
       )}
 
-      {/* Variantes */}
       {fiche.variantes && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-2">Variantes</h2>
-          <p className="text-litup-dark/80 whitespace-pre-line">{fiche.variantes}</p>
+          <h2 className="text-lg font-bold mb-2" style={{ color: "#2B3442" }}>Variantes</h2>
+          <p className="whitespace-pre-line" style={{ color: "#2B3442CC" }}>{typeof fiche.variantes === 'string' ? fiche.variantes : JSON.stringify(fiche.variantes)}</p>
         </div>
       )}
 
-      {/* Clés d'engagement */}
       {cles.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-litup-dark mb-3">
-            Clés d'engagement
-          </h2>
+          <h2 className="text-lg font-bold mb-3" style={{ color: "#2B3442" }}>Clés d&apos;engagement</h2>
           <div className="flex flex-wrap gap-2">
             {cles.map((cle) => (
-              <span
-                key={cle.id}
-                className="text-sm px-3 py-1 rounded-full font-medium"
-                style={{
-                  backgroundColor: cle.couleur_hex ? `${cle.couleur_hex}18` : undefined,
-                  color: cle.couleur_hex || undefined,
-                }}
-              >
+              <span key={cle.id} className="text-sm px-3 py-1 rounded-full font-medium"
+                style={{ backgroundColor: cle.couleur_hex ? `${cle.couleur_hex}18` : "#00989D18", color: cle.couleur_hex || "#00989D" }}>
                 {cle.nom}
               </span>
             ))}
@@ -144,23 +104,12 @@ export default async function FicheDetailPage({
         </div>
       )}
 
-      {/* PDF download */}
       {fiche.pdf_url && (
-        <div className="mt-10 p-6 bg-litup-dark rounded-xl text-center">
-          <p className="text-white/70 text-sm mb-3">
-            Téléchargez la fiche complète au format PDF
-          </p>
-          <a
-            href={fiche.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-litup-gold 
-                       text-litup-dark font-bold rounded-lg 
-                       hover:bg-litup-gold/90 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+        <div className="mt-10 p-6 rounded-xl text-center" style={{ backgroundColor: "#2B3442" }}>
+          <p className="text-sm mb-3" style={{ color: "#ffffffB3" }}>Téléchargez la fiche complète au format PDF</p>
+          <a href={fiche.pdf_url} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 font-bold rounded-lg transition-colors"
+            style={{ backgroundColor: "#FCC33E", color: "#2B3442" }}>
             Télécharger le PDF
           </a>
         </div>
