@@ -81,7 +81,7 @@ export default function FicheCard({ fiche, cles, etape, onClick }: FicheCardProp
               background: stepColor,
             }}
           >
-            {etape.code}
+            {etape.code} · {etape.nom}
           </span>
         ) : (
           <span

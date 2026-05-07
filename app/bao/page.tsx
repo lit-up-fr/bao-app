@@ -5,12 +5,14 @@ import {
   getFiches,
   getCles,
   getEtapes,
+  getParcours,
+  getFichesByParcours,
   getClesByFiche,
   getEtapeById,
-  formatDuree,
   type Fiche,
   type Cle,
   type Etape,
+  type Parcours,
 } from "@/lib/supabase";
 import AppHeader from "@/components/AppHeader";
 import Sidebar from "@/components/Sidebar";
@@ -26,26 +28,28 @@ export default function BaoPage() {
   const [fiches, setFiches] = useState<FicheWithMeta[]>([]);
   const [cles, setCles] = useState<Cle[]>([]);
   const [etapes, setEtapes] = useState<Etape[]>([]);
+  const [parcoursList, setParcoursList] = useState<Parcours[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [activeEtapes, setActiveEtapes] = useState<string[]>([]);
   const [activeCles, setActiveCles] = useState<string[]>([]);
   const [activeFormats, setActiveFormats] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"step" | "name" | "duration">("step");
 
-  // Modal
+  const [activeParcours, setActiveParcours] = useState<Parcours | null>(null);
+  const [parcoursFicheIds, setParcoursFicheIds] = useState<string[]>([]);
+  const [parcoursVisible, setParcoursVisible] = useState(true);
+  const [parcoursCountMap, setParcoursCountMap] = useState<Record<string, number>>({});
+
   const [selectedFiche, setSelectedFiche] = useState<FicheWithMeta | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [fichesData, clesData, etapesData] = await Promise.all([
-          getFiches(),
-          getCles(),
-          getEtapes(),
+        const [fichesData, clesData, etapesData, parcoursData] = await Promise.all([
+          getFiches(), getCles(), getEtapes(), getParcours(),
         ]);
-
         const fichesWithMeta = await Promise.all(
           fichesData.map(async (f) => {
             const [ficheCles, etape] = await Promise.all([
@@ -55,10 +59,19 @@ export default function BaoPage() {
             return { ...f, fichesCles: ficheCles, etape };
           })
         );
-
         setFiches(fichesWithMeta);
         setCles(clesData);
         setEtapes(etapesData);
+        setParcoursList(parcoursData);
+
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          parcoursData.map(async (p) => {
+            const pf = await getFichesByParcours(p.id);
+            counts[p.id] = pf.length;
+          })
+        );
+        setParcoursCountMap(counts);
       } catch (err) {
         console.error("Erreur chargement données:", err);
       } finally {
@@ -68,266 +81,158 @@ export default function BaoPage() {
     loadData();
   }, []);
 
-  // Unique formats
+  const selectParcours = async (p: Parcours) => {
+    if (activeParcours?.id === p.id) { setActiveParcours(null); setParcoursFicheIds([]); return; }
+    setActiveParcours(p);
+    const pf = await getFichesByParcours(p.id);
+    setParcoursFicheIds(pf.map((f) => f.id));
+  };
+  const clearParcours = () => { setActiveParcours(null); setParcoursFicheIds([]); };
+
   const formats = useMemo(() => {
-    const set = new Set<string>();
-    fiches.forEach((f) => {
-      if (f.format) set.add(f.format);
-    });
-    return Array.from(set).sort();
+    const s = new Set<string>();
+    fiches.forEach((f) => { if (f.format) s.add(f.format); });
+    return Array.from(s).sort();
   }, [fiches]);
 
-  // Count fiches per etape
   const fichesCountByEtape = useMemo(() => {
-    const counts: Record<string, number> = {};
-    fiches.forEach((f) => {
-      if (f.etape_id) counts[f.etape_id] = (counts[f.etape_id] || 0) + 1;
-    });
-    return counts;
+    const c: Record<string, number> = {};
+    fiches.forEach((f) => { if (f.etape_id) c[f.etape_id] = (c[f.etape_id] || 0) + 1; });
+    return c;
   }, [fiches]);
 
-  // Count fiches per cle
   const fichesCountByCle = useMemo(() => {
-    const counts: Record<string, number> = {};
-    fiches.forEach((f) => {
-      f.fichesCles.forEach((c) => {
-        counts[c.id] = (counts[c.id] || 0) + 1;
-      });
-    });
-    return counts;
+    const c: Record<string, number> = {};
+    fiches.forEach((f) => f.fichesCles.forEach((k) => { c[k.id] = (c[k.id] || 0) + 1; }));
+    return c;
   }, [fiches]);
 
-  // Filtered fiches
   const filtered = useMemo(() => {
-    return fiches.filter((f) => {
-      // Search
+    let r = fiches.filter((f) => {
       const q = searchQuery.toLowerCase();
-      const matchSearch =
-        !q ||
-        f.nom.toLowerCase().includes(q) ||
-        (f.intention || "").toLowerCase().includes(q) ||
-        (f.pourquoi || "").toLowerCase().includes(q);
-
-      // Etape filter
-      const matchEtape =
-        activeEtapes.length === 0 ||
-        (f.etape_id && activeEtapes.includes(f.etape_id));
-
-      // Cle filter
-      const matchCle =
-        activeCles.length === 0 ||
-        f.fichesCles.some((c) => activeCles.includes(c.id));
-
-      // Format filter
-      const matchFormat =
-        activeFormats.length === 0 ||
-        (f.format && activeFormats.includes(f.format));
-
-      return matchSearch && matchEtape && matchCle && matchFormat;
+      return (!q || f.nom.toLowerCase().includes(q) || (f.intention || "").toLowerCase().includes(q) || (f.pourquoi || "").toLowerCase().includes(q))
+        && (activeEtapes.length === 0 || (f.etape_id && activeEtapes.includes(f.etape_id)))
+        && (activeCles.length === 0 || f.fichesCles.some((c) => activeCles.includes(c.id)))
+        && (activeFormats.length === 0 || (f.format && activeFormats.includes(f.format)))
+        && (parcoursFicheIds.length === 0 || parcoursFicheIds.includes(f.id));
     });
-  }, [fiches, searchQuery, activeEtapes, activeCles, activeFormats]);
+    if (sortBy === "name") r = [...r].sort((a, b) => a.nom.localeCompare(b.nom));
+    else if (sortBy === "duration") r = [...r].sort((a, b) => (a.duree_min || 999) - (b.duree_min || 999));
+    else r = [...r].sort((a, b) => (a.etape?.ordre ?? 999) - (b.etape?.ordre ?? 999) || a.nom.localeCompare(b.nom));
+    return r;
+  }, [fiches, searchQuery, activeEtapes, activeCles, activeFormats, parcoursFicheIds, sortBy]);
 
-  const toggleEtape = (id: string) => {
-    setActiveEtapes((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-  const toggleCle = (id: string) => {
-    setActiveCles((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-  const toggleFormat = (f: string) => {
-    setActiveFormats((prev) =>
-      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]
-    );
-  };
-  const resetFilters = () => {
-    setActiveEtapes([]);
-    setActiveCles([]);
-    setActiveFormats([]);
-    setSearchQuery("");
-  };
+  const toggleEtape = (id: string) => setActiveEtapes((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  const toggleCle = (id: string) => setActiveCles((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  const toggleFormat = (f: string) => setActiveFormats((p) => p.includes(f) ? p.filter((x) => x !== f) : [...p, f]);
+  const resetFilters = () => { setActiveEtapes([]); setActiveCles([]); setActiveFormats([]); setSearchQuery(""); clearParcours(); };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        background: "var(--blanc)",
-      }}
-    >
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--blanc)" }}>
       <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "280px 1fr",
-          gap: 0,
-          maxWidth: "1500px",
-          margin: "0 auto",
-          flexGrow: 1,
-          width: "100%",
-        }}
-      >
-        <Sidebar
-          etapes={etapes}
-          cles={cles}
-          formats={formats}
-          activeEtapes={activeEtapes}
-          activeCles={activeCles}
-          activeFormats={activeFormats}
-          onToggleEtape={toggleEtape}
-          onToggleCle={toggleCle}
-          onToggleFormat={toggleFormat}
-          onReset={resetFilters}
-          fichesCountByEtape={fichesCountByEtape}
-          fichesCountByCle={fichesCountByCle}
-        />
-
-        {/* Results area */}
-        <section style={{ padding: "28px 32px 80px" }}>
-          {/* Results header */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              marginBottom: "24px",
-              flexWrap: "wrap",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "26px",
-                fontWeight: 800,
-                letterSpacing: "-0.02em",
-                color: "var(--anthracite)",
-              }}
-            >
-              <strong style={{ color: "var(--canard)", fontWeight: 800 }}>
-                {loading ? "—" : filtered.length}
-              </strong>{" "}
-              outils
-              <span
-                style={{
-                  fontFamily: "'Caveat', cursive",
-                  fontWeight: 500,
-                  color: "var(--jaune-accent)",
-                  fontSize: "22px",
-                  marginLeft: "6px",
-                }}
-              >
-                pour avancer.
-              </span>
+      {/* ═══ Parcours guidés ═══ */}
+      {parcoursVisible && parcoursList.length > 0 && (
+        <div style={{ borderBottom: "2px solid var(--line)", background: "white", padding: "20px 28px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", maxWidth: "1500px", margin: "0 auto 16px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
+              <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--anthracite)" }}>Par où commencer ?</span>
+              <em style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--jaune-accent)", fontStyle: "italic" }}>— choisissez votre situation</em>
             </div>
+            <button onClick={() => setParcoursVisible(false)} style={{ background: "transparent", border: "1.5px solid var(--line)", borderRadius: "16px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "var(--muted)", fontFamily: "inherit" }}>
+              Masquer ▲
+            </button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px", maxWidth: "1500px", margin: "0 auto" }}>
+            {parcoursList.map((p) => (
+              <button key={p.id} onClick={() => selectParcours(p)} style={{
+                background: activeParcours?.id === p.id ? "var(--canard)" : "white",
+                color: activeParcours?.id === p.id ? "white" : "var(--anthracite)",
+                border: `2px solid ${activeParcours?.id === p.id ? "var(--canard)" : "var(--line)"}`,
+                borderRadius: "14px", padding: "16px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.2s", position: "relative", overflow: "hidden",
+              }}>
+                {parcoursCountMap[p.id] !== undefined && (
+                  <span style={{ position: "absolute", top: "10px", right: "10px", background: activeParcours?.id === p.id ? "white" : "var(--canard)", color: activeParcours?.id === p.id ? "var(--canard)" : "white", fontSize: "11px", fontWeight: 700, width: "22px", height: "22px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {parcoursCountMap[p.id]}
+                  </span>
+                )}
+                <div style={{ fontSize: "24px", marginBottom: "8px" }}>{p.emoji || "📋"}</div>
+                <div style={{ fontSize: "14px", fontWeight: 700, lineHeight: 1.25, marginBottom: "6px" }}>{p.titre}</div>
+                {p.description && (
+                  <div style={{ fontSize: "12px", lineHeight: 1.4, opacity: 0.75, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {p.description}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!parcoursVisible && parcoursList.length > 0 && (
+        <div style={{ borderBottom: "2px solid var(--line)", background: "white", padding: "8px 28px" }}>
+          <button onClick={() => setParcoursVisible(true)} style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "var(--canard)", padding: "4px 0" }}>
+            + Afficher les parcours guidés
+          </button>
+        </div>
+      )}
+
+      {activeParcours && (
+        <div style={{ background: "var(--canard)", color: "white", padding: "12px 28px", display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontSize: "20px" }}>{activeParcours.emoji}</span>
+          <div style={{ flexGrow: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: "14px" }}>{activeParcours.titre}</div>
+            {activeParcours.description && <div style={{ fontSize: "12px", opacity: 0.8 }}>{activeParcours.description}</div>}
+          </div>
+          <button onClick={clearParcours} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", padding: "6px 14px", borderRadius: "14px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            ✕ Tout afficher
+          </button>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, maxWidth: "1500px", margin: "0 auto", flexGrow: 1, width: "100%" }}>
+        <Sidebar etapes={etapes} cles={cles} formats={formats} activeEtapes={activeEtapes} activeCles={activeCles} activeFormats={activeFormats} onToggleEtape={toggleEtape} onToggleCle={toggleCle} onToggleFormat={toggleFormat} onReset={resetFilters} fichesCountByEtape={fichesCountByEtape} fichesCountByCle={fichesCountByCle} />
+
+        <section style={{ padding: "28px 32px 80px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--anthracite)" }}>
+              <strong style={{ color: "var(--canard)", fontWeight: 800 }}>{loading ? "—" : filtered.length}</strong> outils
+              <span style={{ fontFamily: "'Caveat', cursive", fontWeight: 500, color: "var(--jaune-accent)", fontSize: "22px", marginLeft: "6px" }}>pour avancer.</span>
+            </div>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={{ fontSize: "13px", fontFamily: "inherit", fontWeight: 600, padding: "7px 14px", border: "2px solid var(--line-strong)", background: "white", color: "var(--anthracite)", cursor: "pointer", borderRadius: "18px" }}>
+              <option value="step">Trier par étape du parcours</option>
+              <option value="name">Trier par nom</option>
+              <option value="duration">Trier par durée</option>
+            </select>
           </div>
 
-          {/* Grid */}
           {loading ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "white",
-                    border: "2px solid var(--line)",
-                    borderRadius: "16px",
-                    padding: "22px",
-                    minHeight: "260px",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "4px",
-                      background: "#e0e0e0",
-                      borderRadius: "2px",
-                      marginBottom: "16px",
-                    }}
-                  />
-                  <div
-                    style={{
-                      height: "20px",
-                      background: "#e0e0e0",
-                      borderRadius: "4px",
-                      width: "60%",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <div
-                    style={{
-                      height: "14px",
-                      background: "#f0f0f0",
-                      borderRadius: "4px",
-                      width: "80%",
-                    }}
-                  />
+                <div key={i} style={{ background: "white", border: "2px solid var(--line)", borderRadius: "16px", padding: "22px", minHeight: "260px" }}>
+                  <div style={{ height: "4px", background: "#e0e0e0", borderRadius: "2px", marginBottom: "16px" }} />
+                  <div style={{ height: "20px", background: "#e0e0e0", borderRadius: "4px", width: "60%", marginBottom: "8px" }} />
+                  <div style={{ height: "14px", background: "#f0f0f0", borderRadius: "4px", width: "80%" }} />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div
-              style={{
-                padding: "80px 40px",
-                textAlign: "center",
-                background: "white",
-                border: "2px dashed var(--line)",
-                borderRadius: "16px",
-                fontSize: "20px",
-                color: "var(--muted)",
-              }}
-            >
-              <span
-                style={{
-                  color: "var(--jaune-accent)",
-                  fontSize: "28px",
-                  display: "block",
-                  fontFamily: "'Caveat', cursive",
-                  marginBottom: "8px",
-                }}
-              >
-                Hmm…
-              </span>
+            <div style={{ padding: "80px 40px", textAlign: "center", background: "white", border: "2px dashed var(--line)", borderRadius: "16px", fontSize: "20px", color: "var(--muted)" }}>
+              <span style={{ color: "var(--jaune-accent)", fontSize: "28px", display: "block", fontFamily: "'Caveat', cursive", marginBottom: "8px" }}>Hmm…</span>
               Aucun outil ne correspond à ces filtres.
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
               {filtered.map((fiche) => (
-                <FicheCard
-                  key={fiche.id}
-                  fiche={fiche}
-                  cles={fiche.fichesCles}
-                  etape={fiche.etape}
-                  onClick={() => setSelectedFiche(fiche)}
-                />
+                <FicheCard key={fiche.id} fiche={fiche} cles={fiche.fichesCles} etape={fiche.etape} onClick={() => setSelectedFiche(fiche)} />
               ))}
             </div>
           )}
         </section>
       </div>
 
-      {/* Modal */}
       {selectedFiche && (
-        <FicheModal
-          fiche={selectedFiche}
-          cles={selectedFiche.fichesCles}
-          etape={selectedFiche.etape}
-          onClose={() => setSelectedFiche(null)}
-        />
+        <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} />
       )}
     </div>
   );
