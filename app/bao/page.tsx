@@ -1,33 +1,64 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getFiches, getCles, getClesByFiche, type Fiche, type Cle } from "@/lib/supabase";
+import { useEffect, useState, useMemo } from "react";
+import {
+  getFiches,
+  getCles,
+  getEtapes,
+  getClesByFiche,
+  getEtapeById,
+  formatDuree,
+  type Fiche,
+  type Cle,
+  type Etape,
+} from "@/lib/supabase";
+import AppHeader from "@/components/AppHeader";
+import Sidebar from "@/components/Sidebar";
 import FicheCard from "@/components/FicheCard";
-import FilterBar from "@/components/FilterBar";
+import FicheModal from "@/components/FicheModal";
 
-interface FicheWithCles extends Fiche {
+interface FicheWithMeta extends Fiche {
   fichesCles: Cle[];
+  etape: Etape | null;
 }
 
 export default function BaoPage() {
-  const [fiches, setFiches] = useState<FicheWithCles[]>([]);
+  const [fiches, setFiches] = useState<FicheWithMeta[]>([]);
   const [cles, setCles] = useState<Cle[]>([]);
-  const [activeCle, setActiveCle] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [etapes, setEtapes] = useState<Etape[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeEtapes, setActiveEtapes] = useState<string[]>([]);
+  const [activeCles, setActiveCles] = useState<string[]>([]);
+  const [activeFormats, setActiveFormats] = useState<string[]>([]);
+
+  // Modal
+  const [selectedFiche, setSelectedFiche] = useState<FicheWithMeta | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [fichesData, clesData] = await Promise.all([getFiches(), getCles()]);
-        const fichesWithCles = await Promise.all(
+        const [fichesData, clesData, etapesData] = await Promise.all([
+          getFiches(),
+          getCles(),
+          getEtapes(),
+        ]);
+
+        const fichesWithMeta = await Promise.all(
           fichesData.map(async (f) => {
-            const ficheCles = await getClesByFiche(f.id);
-            return { ...f, fichesCles: ficheCles };
+            const [ficheCles, etape] = await Promise.all([
+              getClesByFiche(f.id),
+              f.etape_id ? getEtapeById(f.etape_id) : Promise.resolve(null),
+            ]);
+            return { ...f, fichesCles: ficheCles, etape };
           })
         );
-        setFiches(fichesWithCles);
+
+        setFiches(fichesWithMeta);
         setCles(clesData);
+        setEtapes(etapesData);
       } catch (err) {
         console.error("Erreur chargement données:", err);
       } finally {
@@ -37,54 +68,266 @@ export default function BaoPage() {
     loadData();
   }, []);
 
-  const filtered = fiches.filter((f) => {
-    const matchSearch = !searchQuery ||
-      f.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (f.intention || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (f.pourquoi || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCle = !activeCle || f.fichesCles.some((c) => c.id === activeCle);
-    return matchSearch && matchCle;
-  });
+  // Unique formats
+  const formats = useMemo(() => {
+    const set = new Set<string>();
+    fiches.forEach((f) => {
+      if (f.format) set.add(f.format);
+    });
+    return Array.from(set).sort();
+  }, [fiches]);
+
+  // Count fiches per etape
+  const fichesCountByEtape = useMemo(() => {
+    const counts: Record<string, number> = {};
+    fiches.forEach((f) => {
+      if (f.etape_id) counts[f.etape_id] = (counts[f.etape_id] || 0) + 1;
+    });
+    return counts;
+  }, [fiches]);
+
+  // Count fiches per cle
+  const fichesCountByCle = useMemo(() => {
+    const counts: Record<string, number> = {};
+    fiches.forEach((f) => {
+      f.fichesCles.forEach((c) => {
+        counts[c.id] = (counts[c.id] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [fiches]);
+
+  // Filtered fiches
+  const filtered = useMemo(() => {
+    return fiches.filter((f) => {
+      // Search
+      const q = searchQuery.toLowerCase();
+      const matchSearch =
+        !q ||
+        f.nom.toLowerCase().includes(q) ||
+        (f.intention || "").toLowerCase().includes(q) ||
+        (f.pourquoi || "").toLowerCase().includes(q);
+
+      // Etape filter
+      const matchEtape =
+        activeEtapes.length === 0 ||
+        (f.etape_id && activeEtapes.includes(f.etape_id));
+
+      // Cle filter
+      const matchCle =
+        activeCles.length === 0 ||
+        f.fichesCles.some((c) => activeCles.includes(c.id));
+
+      // Format filter
+      const matchFormat =
+        activeFormats.length === 0 ||
+        (f.format && activeFormats.includes(f.format));
+
+      return matchSearch && matchEtape && matchCle && matchFormat;
+    });
+  }, [fiches, searchQuery, activeEtapes, activeCles, activeFormats]);
+
+  const toggleEtape = (id: string) => {
+    setActiveEtapes((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+  const toggleCle = (id: string) => {
+    setActiveCles((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+  const toggleFormat = (f: string) => {
+    setActiveFormats((prev) =>
+      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]
+    );
+  };
+  const resetFilters = () => {
+    setActiveEtapes([]);
+    setActiveCles([]);
+    setActiveFormats([]);
+    setSearchQuery("");
+  };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#2B3442" }}>La boîte à outils</h1>
-        <p className="mt-2" style={{ color: "rgba(43,52,66,0.55)" }}>
-          {fiches.length} outils pour animer, libérer la parole et accompagner les jeunes.
-        </p>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--blanc)",
+      }}
+    >
+      <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "280px 1fr",
+          gap: 0,
+          maxWidth: "1500px",
+          margin: "0 auto",
+          flexGrow: 1,
+          width: "100%",
+        }}
+      >
+        <Sidebar
+          etapes={etapes}
+          cles={cles}
+          formats={formats}
+          activeEtapes={activeEtapes}
+          activeCles={activeCles}
+          activeFormats={activeFormats}
+          onToggleEtape={toggleEtape}
+          onToggleCle={toggleCle}
+          onToggleFormat={toggleFormat}
+          onReset={resetFilters}
+          fichesCountByEtape={fichesCountByEtape}
+          fichesCountByCle={fichesCountByCle}
+        />
+
+        {/* Results area */}
+        <section style={{ padding: "28px 32px 80px" }}>
+          {/* Results header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              marginBottom: "24px",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "26px",
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+                color: "var(--anthracite)",
+              }}
+            >
+              <strong style={{ color: "var(--canard)", fontWeight: 800 }}>
+                {loading ? "—" : filtered.length}
+              </strong>{" "}
+              outils
+              <span
+                style={{
+                  fontFamily: "'Caveat', cursive",
+                  fontWeight: 500,
+                  color: "var(--jaune-accent)",
+                  fontSize: "22px",
+                  marginLeft: "6px",
+                }}
+              >
+                pour avancer.
+              </span>
+            </div>
+          </div>
+
+          {/* Grid */}
+          {loading ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: "white",
+                    border: "2px solid var(--line)",
+                    borderRadius: "16px",
+                    padding: "22px",
+                    minHeight: "260px",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "4px",
+                      background: "#e0e0e0",
+                      borderRadius: "2px",
+                      marginBottom: "16px",
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: "20px",
+                      background: "#e0e0e0",
+                      borderRadius: "4px",
+                      width: "60%",
+                      marginBottom: "8px",
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: "14px",
+                      background: "#f0f0f0",
+                      borderRadius: "4px",
+                      width: "80%",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div
+              style={{
+                padding: "80px 40px",
+                textAlign: "center",
+                background: "white",
+                border: "2px dashed var(--line)",
+                borderRadius: "16px",
+                fontSize: "20px",
+                color: "var(--muted)",
+              }}
+            >
+              <span
+                style={{
+                  color: "var(--jaune-accent)",
+                  fontSize: "28px",
+                  display: "block",
+                  fontFamily: "'Caveat', cursive",
+                  marginBottom: "8px",
+                }}
+              >
+                Hmm…
+              </span>
+              Aucun outil ne correspond à ces filtres.
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {filtered.map((fiche) => (
+                <FicheCard
+                  key={fiche.id}
+                  fiche={fiche}
+                  cles={fiche.fichesCles}
+                  etape={fiche.etape}
+                  onClick={() => setSelectedFiche(fiche)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
-      <FilterBar cles={cles} activeCle={activeCle} onCleChange={setActiveCle}
-        searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-
-      <p className="text-sm mt-6 mb-4" style={{ color: "rgba(43,52,66,0.45)" }}>
-        {filtered.length} outil{filtered.length !== 1 ? "s" : ""} trouvé{filtered.length !== 1 ? "s" : ""}
-      </p>
-
-      {loading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border p-5 animate-pulse" style={{ borderColor: "rgba(43,52,66,0.1)" }}>
-              <div className="h-1 bg-gray-200 rounded mb-4" />
-              <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
-              <div className="h-4 bg-gray-100 rounded w-1/2 mb-4" />
-              <div className="h-3 bg-gray-100 rounded w-full mb-1" />
-              <div className="h-3 bg-gray-100 rounded w-5/6" />
-            </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16" style={{ color: "rgba(43,52,66,0.35)" }}>
-          <p className="text-lg">Aucun outil trouvé.</p>
-          <p className="text-sm mt-1">Essayez un autre mot-clé ou changez de filtre.</p>
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((fiche) => (
-            <FicheCard key={fiche.id} fiche={fiche} cles={fiche.fichesCles} />
-          ))}
-        </div>
+      {/* Modal */}
+      {selectedFiche && (
+        <FicheModal
+          fiche={selectedFiche}
+          cles={selectedFiche.fichesCles}
+          etape={selectedFiche.etape}
+          onClose={() => setSelectedFiche(null)}
+        />
       )}
     </div>
   );

@@ -1,95 +1,240 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
 import type { Fiche, Cle, Etape } from "@/lib/supabase";
-import { formatDuree, getEtapeById } from "@/lib/supabase";
+import { formatDuree } from "@/lib/supabase";
 
 interface FicheCardProps {
   fiche: Fiche;
-  cles?: Cle[];
+  cles: Cle[];
+  etape: Etape | null;
+  onClick: () => void;
 }
 
-export default function FicheCard({ fiche, cles = [] }: FicheCardProps) {
+export default function FicheCard({ fiche, cles, etape, onClick }: FicheCardProps) {
   const duree = formatDuree(fiche);
-  const [etape, setEtape] = useState<Etape | null>(null);
-
-  useEffect(() => {
-    if (fiche.etape_id) {
-      getEtapeById(fiche.etape_id).then(setEtape);
-    }
-  }, [fiche.etape_id]);
+  const stepColor = etape?.couleur_hex || "var(--muted)";
 
   return (
-    <Link href={`/bao/${fiche.slug}`}
-      className="group block bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-      style={{ borderColor: "rgba(43,52,66,0.08)" }}>
+    <button
+      onClick={onClick}
+      style={{
+        background: "white",
+        padding: "22px",
+        cursor: "pointer",
+        transition: "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "260px",
+        border: "2px solid var(--line)",
+        textAlign: "left",
+        fontFamily: "inherit",
+        color: "inherit",
+        position: "relative",
+        borderRadius: "16px",
+        overflow: "hidden",
+        width: "100%",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-4px)";
+        e.currentTarget.style.boxShadow = "0 10px 28px rgba(43, 52, 66, 0.08)";
+        e.currentTarget.style.borderColor = "var(--canard)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "none";
+        e.currentTarget.style.borderColor = "var(--line)";
+      }}
+    >
+      {/* Colored top bar */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "4px",
+          background: stepColor,
+        }}
+      />
 
-      {/* Header with etape badge */}
-      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+      {/* Header: step badge + audience */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: "12px",
+          gap: "10px",
+        }}
+      >
         {etape ? (
-          <span className="text-[11px] font-bold tracking-wide uppercase px-2.5 py-1 rounded"
+          <span
             style={{
-              backgroundColor: etape.couleur_hex ? `${etape.couleur_hex}15` : "rgba(0,152,157,0.08)",
-              color: etape.couleur_hex || "#00989D",
-            }}>
-            {etape.code} · {etape.nom}
+              fontSize: "12px",
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+              padding: "4px 10px",
+              borderRadius: "12px",
+              color: "white",
+              flexShrink: 0,
+              textTransform: "uppercase",
+              background: stepColor,
+            }}
+          >
+            {etape.code}
           </span>
         ) : (
-          <span className="text-[11px] font-bold tracking-wide uppercase px-2.5 py-1 rounded"
-            style={{ backgroundColor: "rgba(43,52,66,0.05)", color: "rgba(43,52,66,0.4)" }}>
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 600,
+              color: "var(--muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
             Non classé
           </span>
         )}
+
         {fiche.public_pro_pair && (
-          <span className="text-[10px] font-semibold uppercase tracking-wider"
-            style={{ color: "rgba(43,52,66,0.35)" }}>
+          <span
+            style={{
+              fontSize: "9px",
+              letterSpacing: "0.08em",
+              color: "var(--muted)",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              background: "var(--blanc)",
+              padding: "3px 7px",
+              borderRadius: "8px",
+              position: "absolute",
+              top: "14px",
+              right: "14px",
+            }}
+          >
             {fiche.public_pro_pair}
           </span>
         )}
       </div>
 
-      {/* Content */}
-      <div className="px-5 pb-4">
-        <h3 className="font-bold text-[15px] leading-snug mt-1" style={{ color: "#2B3442" }}>
-          {fiche.nom}
-        </h3>
+      {/* Title */}
+      <div
+        style={{
+          fontSize: "20px",
+          lineHeight: 1.2,
+          fontWeight: 700,
+          letterSpacing: "-0.01em",
+          marginBottom: "8px",
+          color: "var(--anthracite)",
+        }}
+      >
+        {fiche.nom}
+      </div>
 
-        {fiche.intention && (
-          <p className="text-[13px] mt-2 line-clamp-3 italic leading-relaxed" style={{ color: "rgba(43,52,66,0.55)" }}>
-            {fiche.intention}
-          </p>
+      {/* Intention / pitch */}
+      {fiche.intention && (
+        <p
+          style={{
+            fontSize: "13px",
+            lineHeight: 1.45,
+            color: "var(--muted)",
+            margin: "0 0 14px 0",
+            flexGrow: 1,
+            fontStyle: "italic",
+            display: "-webkit-box",
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {fiche.intention}
+        </p>
+      )}
+
+      {/* Meta pills */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "5px",
+          marginBottom: "12px",
+        }}
+      >
+        {duree && (
+          <span
+            style={{
+              fontSize: "11px",
+              padding: "3px 9px",
+              borderRadius: "10px",
+              background: "var(--blanc)",
+              color: "var(--anthracite-soft)",
+              fontWeight: 500,
+            }}
+          >
+            ⏱ {duree}
+          </span>
         )}
-
-        {/* Metadata */}
-        <div className="flex flex-wrap items-center gap-2 mt-3 text-[11px]" style={{ color: "rgba(43,52,66,0.45)" }}>
-          {duree && (
-            <span className="flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
-              </svg>
-              {duree}
-            </span>
-          )}
-          {fiche.format && <span>{fiche.format}</span>}
-          {fiche.materiel && <span>{fiche.materiel}</span>}
-        </div>
-
-        {/* Tags clés */}
-        {cles.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {cles.map((cle) => (
-              <span key={cle.id} className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold"
-                style={{
-                  backgroundColor: cle.couleur_hex || "#00989D",
-                  color: "white",
-                }}>
-                {cle.nom.split(" (")[0]}
-              </span>
-            ))}
-          </div>
+        {fiche.format && (
+          <span
+            style={{
+              fontSize: "11px",
+              padding: "3px 9px",
+              borderRadius: "10px",
+              background: "var(--blanc)",
+              color: "var(--anthracite-soft)",
+              fontWeight: 500,
+            }}
+          >
+            {fiche.format}
+          </span>
+        )}
+        {fiche.materiel && (
+          <span
+            style={{
+              fontSize: "11px",
+              padding: "3px 9px",
+              borderRadius: "10px",
+              background: "var(--blanc)",
+              color: "var(--anthracite-soft)",
+              fontWeight: 500,
+            }}
+          >
+            {fiche.materiel}
+          </span>
         )}
       </div>
-    </Link>
+
+      {/* Key pills */}
+      {cles.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px",
+            marginTop: "auto",
+            paddingTop: "12px",
+            borderTop: "1px dashed var(--line)",
+          }}
+        >
+          {cles.map((cle) => (
+            <span
+              key={cle.id}
+              style={{
+                fontSize: "10px",
+                padding: "3px 8px",
+                borderRadius: "10px",
+                color: "white",
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                background: cle.couleur_hex || "var(--canard)",
+              }}
+            >
+              {cle.nom.split(" (")[0]}
+            </span>
+          ))}
+        </div>
+      )}
+    </button>
   );
 }
