@@ -4,10 +4,60 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { getProfileByUserId, Profile } from "@/lib/auth";
 import type { User } from "@supabase/supabase-js";
+
+// Définition des rôles et permissions
+type AdminRole = "super_admin" | "editor" | "moderator" | "analyst";
+
+const ROLE_LABELS: Record<AdminRole, string> = {
+  super_admin: "Super Admin",
+  editor: "Éditeur",
+  moderator: "Modérateur",
+  analyst: "Analyste",
+};
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  roles: AdminRole[]; // rôles autorisés
+}
+
+const ALL_NAV_ITEMS: NavItem[] = [
+  { href: "/admin", label: "Tableau de bord", icon: "📊", roles: ["super_admin", "editor", "moderator", "analyst"] },
+  { href: "/admin/fiches", label: "Fiches", icon: "📝", roles: ["super_admin", "editor"] },
+  { href: "/admin/parcours", label: "Parcours", icon: "🗺", roles: ["super_admin", "editor"] },
+  { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑", roles: ["super_admin", "editor"] },
+  { href: "/admin/etapes", label: "Étapes", icon: "📍", roles: ["super_admin", "editor"] },
+  { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥", roles: ["super_admin", "moderator"] },
+];
+
+function hasAccess(role: AdminRole | null, allowedRoles: AdminRole[]): boolean {
+  if (!role) return false;
+  return allowedRoles.includes(role);
+}
+
+function canAccessPath(role: AdminRole | null, pathname: string): boolean {
+  if (!role) return false;
+  if (role === "super_admin") return true;
+
+  // Tableau de bord accessible à tous les admins
+  if (pathname === "/admin") return true;
+
+  // Vérifier chaque nav item
+  const matchingItem = ALL_NAV_ITEMS.find(
+    (item) => item.href !== "/admin" && pathname.startsWith(item.href)
+  );
+  if (matchingItem) return hasAccess(role, matchingItem.roles);
+
+  // Par défaut, refuser
+  return false;
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
@@ -15,11 +65,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const isLoginPage = pathname === "/admin/login";
 
+  const adminRole = (profile?.admin_role as AdminRole | null) ||
+    (profile?.is_admin ? "super_admin" : null);
+
   useEffect(() => {
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        const prof = await getProfileByUserId(session.user.id);
+        setProfile(prof);
+
+        // Vérifier que l'utilisateur est bien admin
+        if (!prof?.is_admin) {
+          router.push("/bao");
+          return;
+        }
       } else if (!isLoginPage) {
         router.push("/admin/login");
       }
@@ -32,12 +93,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setUser(session.user);
       } else {
         setUser(null);
+        setProfile(null);
         if (!isLoginPage) router.push("/admin/login");
       }
     });
 
     return () => subscription.unsubscribe();
   }, [router, isLoginPage]);
+
+  // Vérifier l'accès à la page courante
+  useEffect(() => {
+    if (!loading && profile && adminRole && !isLoginPage) {
+      if (!canAccessPath(adminRole, pathname)) {
+        router.push("/admin");
+      }
+    }
+  }, [pathname, adminRole, loading, profile, router, isLoginPage]);
 
   // Fermer le menu quand on change de page
   useEffect(() => {
@@ -59,16 +130,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!user) return null;
+  if (!user || !profile) return null;
 
-  const navItems = [
-    { href: "/admin", label: "Tableau de bord", icon: "📊" },
-    { href: "/admin/fiches", label: "Fiches", icon: "📝" },
-    { href: "/admin/parcours", label: "Parcours", icon: "🗺" },
-    { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑" },
-    { href: "/admin/etapes", label: "Étapes", icon: "📍" },
-    { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥" },
-  ];
+  // Filtrer les items de navigation selon le rôle
+  const navItems = ALL_NAV_ITEMS.filter((item) => hasAccess(adminRole, item.roles));
 
   return (
     <>
@@ -145,6 +210,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             {menuOpen ? "✕" : "☰"}
           </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-litup-white.png"
             alt="Lit uP"
@@ -221,11 +287,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             })}
           </nav>
 
-          {/* User + logout */}
+          {/* User + role + logout */}
           <div style={{ padding: "16px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {user.email}
             </div>
+            {adminRole && (
+              <div style={{
+                fontSize: "10px",
+                fontWeight: 700,
+                color: adminRole === "super_admin" ? "#FCC33E" : "rgba(255,255,255,0.4)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginBottom: "8px",
+              }}>
+                {ROLE_LABELS[adminRole]}
+              </div>
+            )}
             <div style={{ display: "flex", gap: "8px" }}>
               <Link
                 href="/bao"

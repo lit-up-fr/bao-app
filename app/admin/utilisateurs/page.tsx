@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllProfiles, updateProfileStatus, Profile } from "@/lib/auth";
+import { getAllProfiles, updateProfileStatus, updateProfileRole, Profile } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
+import { getProfileByUserId } from "@/lib/auth";
 
 type StatusFilter = "all" | "en_attente" | "active" | "suspended" | "refused";
 
@@ -12,6 +14,7 @@ export default function AdminUtilisateursPage() {
   const [search, setSearch] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   async function loadProfiles() {
     try {
@@ -26,6 +29,15 @@ export default function AdminUtilisateursPage() {
 
   useEffect(() => {
     loadProfiles();
+    // Charger le rôle de l'utilisateur courant
+    async function loadCurrentRole() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const prof = await getProfileByUserId(session.user.id);
+        setCurrentUserRole(prof?.admin_role || (prof?.is_admin ? "super_admin" : null));
+      }
+    }
+    loadCurrentRole();
   }, []);
 
   async function handleStatusChange(userId: string, newStatus: Profile["status"]) {
@@ -40,6 +52,29 @@ export default function AdminUtilisateursPage() {
       }
     } catch (e) {
       console.error("Erreur mise à jour statut:", e);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleRoleChange(userId: string, role: string) {
+    setActionLoading(userId);
+    try {
+      const isAdmin = role !== "none";
+      const adminRole = role === "none" ? null : role;
+      await updateProfileRole(userId, isAdmin, adminRole);
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === userId ? { ...p, is_admin: isAdmin, admin_role: adminRole } : p
+        )
+      );
+      if (selectedProfile?.id === userId) {
+        setSelectedProfile((prev) =>
+          prev ? { ...prev, is_admin: isAdmin, admin_role: adminRole } : null
+        );
+      }
+    } catch (e) {
+      console.error("Erreur mise à jour rôle:", e);
     } finally {
       setActionLoading(null);
     }
@@ -434,6 +469,37 @@ export default function AdminUtilisateursPage() {
                 value={selectedProfile.newsletter_consent ? "Oui" : "Non"}
               />
             </div>
+
+            {/* Rôle admin (super_admin uniquement) */}
+            {currentUserRole === "super_admin" && (
+              <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
+                  Rôle administrateur
+                </div>
+                <select
+                  value={selectedProfile.admin_role || "none"}
+                  onChange={(e) => handleRoleChange(selectedProfile.id, e.target.value)}
+                  disabled={actionLoading === selectedProfile.id}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "13px",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    background: "white",
+                    color: "#2B3442",
+                  }}
+                >
+                  <option value="none">Aucun (utilisateur standard)</option>
+                  <option value="super_admin">Super Admin (accès total)</option>
+                  <option value="editor">Éditeur (fiches, parcours, clés, étapes)</option>
+                  <option value="moderator">Modérateur (gestion utilisateurs)</option>
+                  <option value="analyst">Analyste (lecture seule, analytics)</option>
+                </select>
+              </div>
+            )}
 
             {/* Actions */}
             <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "8px" }}>

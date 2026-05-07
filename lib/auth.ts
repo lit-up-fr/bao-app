@@ -20,6 +20,7 @@ export interface Profile {
   privacy_accepted_at?: string;
   status: "en_attente" | "active" | "suspended" | "refused";
   is_admin: boolean;
+  admin_role?: string | null;
   created_at?: string;
   updated_at?: string;
   last_seen_at?: string;
@@ -168,6 +169,23 @@ export async function updateProfileStatus(
   const { error } = await supabase
     .from("profiles")
     .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
+export async function updateProfileRole(
+  userId: string,
+  isAdmin: boolean,
+  adminRole: string | null
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      is_admin: isAdmin,
+      admin_role: adminRole,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", userId);
 
   if (error) throw error;
