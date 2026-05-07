@@ -621,29 +621,6 @@ export default function FicheModal({ fiche, cles, etape, onClose }: FicheModalPr
               ↓ Télécharger la fiche PDF
             </a>
           )}
-          {pdfUrl && (
-            <button
-              onClick={() => window.open(pdfUrl, "_blank")}
-              style={{
-                padding: "11px 20px",
-                border: "2px solid var(--canard)",
-                background: "transparent",
-                color: "var(--canard)",
-                fontFamily: "inherit",
-                fontSize: "13px",
-                fontWeight: 700,
-                cursor: "pointer",
-                borderRadius: "24px",
-                transition: "all 0.2s",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                letterSpacing: "0.02em",
-              }}
-            >
-              🖨 Imprimer
-            </button>
-          )}
         </div>
 
         {/* Source */}
