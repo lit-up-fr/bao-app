@@ -2,52 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600;1,700&family=Caveat:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400;1,600&family=Caveat:wght@400;500;600;700&display=swap');
 
 :root {
-  --dark: #2B3442;
-  --teal: #00989D;
-  --gold: #FCC33E;
-  --violet: #6B2468;
-  --light: #F6F6F8;
+  /* === COULEURS LIT UP OFFICIELLES === */
+  --canard: #00989D;
+  --canard-dark: #007479;
+  --canard-light: #b3dfe0;
+  --jaune: #FCC33E;
+  --jaune-dark: #e0a920;
+  --jaune-accent: #856100;
+  --jaune-light: #ffe8a6;
+  --anthracite: #2B3442;
+  --anthracite-soft: #4a5568;
+  --prune: #6B2468;
+  --prune-light: #9a4e97;
+  --blanc: #F6F6F8;
+  --noir: #000000;
+  --line: rgba(43, 52, 66, 0.12);
+  --line-strong: rgba(43, 52, 66, 0.22);
+  --muted: rgba(43, 52, 66, 0.75);
+
+  /* === COULEURS PAR ÉTAPE === */
+  --step-A: var(--canard-dark);
+  --step-B1: var(--anthracite);
+  --step-B2: var(--prune);
+  --step-B3: #8a6500;
+  --step-B4: var(--canard-dark);
+  --step-B5: var(--prune);
+  --step-B6: var(--anthracite-soft);
+  --step-B7: var(--anthracite);
+  --step-C: var(--canard-dark);
+  --step-other: var(--anthracite-soft);
+
+  /* === CLÉS D'ENGAGEMENT === */
+  --key-utilite: var(--canard);
+  --key-appartenance: var(--jaune-dark);
+  --key-consideration: var(--prune);
+  --key-securite: var(--canard-dark);
+  --key-progression: var(--jaune);
+  --key-plaisir: var(--jaune-dark);
+  --key-action: var(--anthracite);
+  --key-liberte: var(--prune-light);
+  --key-sens: var(--canard);
 }
 
-body {
-  font-family: 'Source Sans 3', system-ui, sans-serif;
-  color: #2B3442;
-  background: #F6F6F8;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.6;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+body {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  background: var(--blanc);
+  color: var(--anthracite);
+  line-height: 1.55;
+  font-size: 16px;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 *:focus-visible {
-  outline: 2px solid #00989D;
+  outline: 2px solid var(--canard);
   outline-offset: 2px;
 }
 
 h1, h2, h3, h4 {
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-
-h1 { font-weight: 700; }
-h2 { font-weight: 700; }
-h3 { font-weight: 700; }
-
-p {
-  line-height: 1.7;
-}
-
-a, button {
-  transition: all 0.2s ease;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 ::selection {
   background: rgba(0, 152, 157, 0.15);
-  color: #2B3442;
+  color: var(--anthracite);
+}
+
+/* ========== ANIMATIONS ========== */
+.fade-in {
+  animation: fadeIn 0.5s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.15s; }
+.stagger > *:nth-child(3) { animation-delay: 0.25s; }
+
+/* ========== LANDING RESPONSIVE ========== */
+@media (max-width: 900px) {
+  .landing-hero {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+    padding: 40px 20px !important;
+  }
+  .landing-hero .hero-illus {
+    max-width: 320px !important;
+    order: -1;
+  }
+  .parcours-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .parcours-section-inner {
+    padding: 60px 20px 80px !important;
+  }
+  .landing-band {
+    flex-wrap: wrap;
+    padding: 12px 18px !important;
+    gap: 8px;
+  }
+  .landing-band .band-date {
+    display: none;
+  }
 }
