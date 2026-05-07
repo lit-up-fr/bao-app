@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { getProfileByUserId } from "@/lib/auth";
 
 interface AppHeaderProps {
   searchQuery: string;
@@ -10,6 +12,18 @@ interface AppHeaderProps {
 
 export default function AppHeader({ searchQuery, onSearchChange }: AppHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const profile = await getProfileByUserId(session.user.id);
+        if (profile?.is_admin) setIsAdmin(true);
+      }
+    }
+    checkAdmin();
+  }, []);
 
   return (
     <>
@@ -128,6 +142,22 @@ export default function AppHeader({ searchQuery, onSearchChange }: AppHeaderProp
               >
                 ⭐
               </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  style={{
+                    color: "white",
+                    textDecoration: "none",
+                    background: "var(--anthracite)",
+                    padding: "4px 10px",
+                    borderRadius: "14px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  ⚙
+                </Link>
+              )}
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 style={{
@@ -214,6 +244,21 @@ export default function AppHeader({ searchQuery, onSearchChange }: AppHeaderProp
             >
               Mon espace
             </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                style={{
+                  color: "white",
+                  textDecoration: "none",
+                  background: "var(--anthracite)",
+                  padding: "6px 14px",
+                  borderRadius: "18px",
+                  fontSize: "13px",
+                }}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
         </div>
 
