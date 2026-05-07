@@ -29,8 +29,17 @@ export default function FicheModal({ fiche, cles, etape, onClose }: FicheModalPr
   const conseils = parseJSON(fiche.conseils);
   const variantes = parseJSON(fiche.variantes);
 
+  // Construire l'URL complète du PDF
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://odadaqpihvcnuprkdchr.supabase.co";
+  const pdfUrl = fiche.pdf_url
+    ? fiche.pdf_url.startsWith("http")
+      ? fiche.pdf_url
+      : `${SUPABASE_URL}/storage/v1/object/public/fiches-pdf/${fiche.pdf_url.replace(/^\/?(pdfs\/)?/, "")}`
+    : null;
+
   return (
     <div
+      className="modal-overlay"
       onClick={onClose}
       style={{
         position: "fixed",
@@ -44,6 +53,7 @@ export default function FicheModal({ fiche, cles, etape, onClose }: FicheModalPr
       }}
     >
       <div
+        className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "white",
@@ -585,9 +595,9 @@ export default function FicheModal({ fiche, cles, etape, onClose }: FicheModalPr
             flexWrap: "wrap",
           }}
         >
-          {fiche.pdf_url && (
+          {pdfUrl && (
             <a
-              href={fiche.pdf_url}
+              href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -611,27 +621,29 @@ export default function FicheModal({ fiche, cles, etape, onClose }: FicheModalPr
               ↓ Télécharger la fiche PDF
             </a>
           )}
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: "11px 20px",
-              border: "2px solid var(--canard)",
-              background: "transparent",
-              color: "var(--canard)",
-              fontFamily: "inherit",
-              fontSize: "13px",
-              fontWeight: 700,
-              cursor: "pointer",
-              borderRadius: "24px",
-              transition: "all 0.2s",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              letterSpacing: "0.02em",
-            }}
-          >
-            🖨 Imprimer
-          </button>
+          {pdfUrl && (
+            <button
+              onClick={() => window.open(pdfUrl, "_blank")}
+              style={{
+                padding: "11px 20px",
+                border: "2px solid var(--canard)",
+                background: "transparent",
+                color: "var(--canard)",
+                fontFamily: "inherit",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                borderRadius: "24px",
+                transition: "all 0.2s",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                letterSpacing: "0.02em",
+              }}
+            >
+              🖨 Imprimer
+            </button>
+          )}
         </div>
 
         {/* Source */}

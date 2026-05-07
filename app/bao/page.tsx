@@ -143,7 +143,7 @@ export default function BaoPage() {
               Masquer ▲
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px", maxWidth: "1500px", margin: "0 auto" }}>
+          <div className="parcours-guides-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px", maxWidth: "1500px", margin: "0 auto" }}>
             {parcoursList.map((p) => (
               <button key={p.id} onClick={() => selectParcours(p)} style={{
                 background: activeParcours?.id === p.id ? "var(--canard)" : "white",
@@ -190,10 +190,10 @@ export default function BaoPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, maxWidth: "1500px", margin: "0 auto", flexGrow: 1, width: "100%" }}>
+      <div className="app-main-layout" style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, maxWidth: "1500px", margin: "0 auto", flexGrow: 1, width: "100%" }}>
         <Sidebar etapes={etapes} cles={cles} formats={formats} activeEtapes={activeEtapes} activeCles={activeCles} activeFormats={activeFormats} onToggleEtape={toggleEtape} onToggleCle={toggleCle} onToggleFormat={toggleFormat} onReset={resetFilters} fichesCountByEtape={fichesCountByEtape} fichesCountByCle={fichesCountByCle} />
 
-        <section style={{ padding: "28px 32px 80px" }}>
+        <section className="app-results" style={{ padding: "28px 32px 80px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
             <div style={{ fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--anthracite)" }}>
               <strong style={{ color: "var(--canard)", fontWeight: 800 }}>{loading ? "—" : filtered.length}</strong> outils
