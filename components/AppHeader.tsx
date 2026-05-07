@@ -232,6 +232,12 @@ export default function AppHeader({ searchQuery, onSearchChange }: AppHeaderProp
               Parcours
             </Link>
             <Link
+              href="/proposer"
+              style={{ color: "var(--anthracite)", textDecoration: "none" }}
+            >
+              Proposer
+            </Link>
+            <Link
               href="/mon-espace"
               style={{
                 color: "white",

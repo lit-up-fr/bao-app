@@ -317,3 +317,96 @@ export async function toggleRetourVisibility(retourId: string, isVisible: boolea
 
   if (error) throw error;
 }
+
+// === Propositions ===
+
+export interface Proposition {
+  id: string;
+  user_id: string;
+  titre: string;
+  description: string;
+  contexte?: string | null;
+  objectifs?: string | null;
+  public_cible?: string | null;
+  format_suggere?: string | null;
+  duree_estimee?: string | null;
+  lien_ressource?: string | null;
+  status: "en_attente" | "acceptee" | "refusee" | "en_discussion";
+  admin_commentaire?: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    prenom: string;
+    nom: string;
+    structure: string | null;
+    categorie_pro: string | null;
+  };
+}
+
+export async function createProposition(
+  userId: string,
+  data: {
+    titre: string;
+    description: string;
+    contexte?: string;
+    objectifs?: string;
+    public_cible?: string;
+    format_suggere?: string;
+    duree_estimee?: string;
+    lien_ressource?: string;
+  }
+) {
+  const { data: result, error } = await supabase
+    .from("propositions")
+    .insert({ user_id: userId, ...data })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return result as Proposition;
+}
+
+export async function getMyPropositions(userId: string): Promise<Proposition[]> {
+  const { data, error } = await supabase
+    .from("propositions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  return (data as Proposition[]) || [];
+}
+
+export async function getAllPropositions(): Promise<Proposition[]> {
+  const { data, error } = await supabase
+    .from("propositions")
+    .select("*, profile:profiles(prenom, nom, structure, categorie_pro)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getAllPropositions error:", error);
+    return [];
+  }
+  return (data as Proposition[]) || [];
+}
+
+export async function updatePropositionStatus(
+  propositionId: string,
+  status: Proposition["status"],
+  adminCommentaire?: string
+) {
+  const update: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  if (adminCommentaire !== undefined) {
+    update.admin_commentaire = adminCommentaire;
+  }
+
+  const { error } = await supabase
+    .from("propositions")
+    .update(update)
+    .eq("id", propositionId);
+
+  if (error) throw error;
+}

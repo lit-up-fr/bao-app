@@ -31,6 +31,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑", roles: ["super_admin", "editor"] },
   { href: "/admin/etapes", label: "Étapes", icon: "📍", roles: ["super_admin", "editor"] },
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥", roles: ["super_admin", "moderator"] },
+  { href: "/admin/propositions", label: "Propositions", icon: "💡", roles: ["super_admin", "editor"] },
 ];
 
 function hasAccess(role: AdminRole | null, allowedRoles: AdminRole[]): boolean {
