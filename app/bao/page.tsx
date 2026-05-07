@@ -286,7 +286,7 @@ export default function BaoPage() {
         </div>
 
         {selectedFiche && (
-          <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} />
+          <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} userId={userId} />
         )}
       </div>
     </>

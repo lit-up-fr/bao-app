@@ -236,3 +236,84 @@ export async function logConsultation(userId: string, ficheId: string) {
     .from("consultations")
     .insert({ user_id: userId, fiche_id: ficheId });
 }
+
+// === Retours d'expérience ===
+
+export interface Retour {
+  id: string;
+  fiche_id: string;
+  user_id: string;
+  contenu: string;
+  note: number | null;
+  created_at: string;
+  updated_at: string;
+  is_visible: boolean;
+  // Jointure
+  profile?: {
+    prenom: string;
+    nom: string;
+    structure: string | null;
+    categorie_pro: string | null;
+  };
+}
+
+export async function getRetoursByFiche(ficheId: string): Promise<Retour[]> {
+  const { data, error } = await supabase
+    .from("retours")
+    .select("*, profile:profiles(prenom, nom, structure, categorie_pro)")
+    .eq("fiche_id", ficheId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getRetoursByFiche error:", error);
+    return [];
+  }
+  return (data as Retour[]) || [];
+}
+
+export async function createRetour(
+  ficheId: string,
+  userId: string,
+  contenu: string,
+  note: number | null
+) {
+  const { data, error } = await supabase
+    .from("retours")
+    .insert({ fiche_id: ficheId, user_id: userId, contenu, note })
+    .select("*, profile:profiles(prenom, nom, structure, categorie_pro)")
+    .single();
+
+  if (error) throw error;
+  return data as Retour;
+}
+
+export async function updateRetour(
+  retourId: string,
+  contenu: string,
+  note: number | null
+) {
+  const { error } = await supabase
+    .from("retours")
+    .update({ contenu, note, updated_at: new Date().toISOString() })
+    .eq("id", retourId);
+
+  if (error) throw error;
+}
+
+export async function deleteRetour(retourId: string) {
+  const { error } = await supabase
+    .from("retours")
+    .delete()
+    .eq("id", retourId);
+
+  if (error) throw error;
+}
+
+export async function toggleRetourVisibility(retourId: string, isVisible: boolean) {
+  const { error } = await supabase
+    .from("retours")
+    .update({ is_visible: isVisible })
+    .eq("id", retourId);
+
+  if (error) throw error;
+}
