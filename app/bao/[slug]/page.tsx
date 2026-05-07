@@ -2,78 +2,21 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getFicheBySlug, getClesByFiche, getEtapeById, formatDuree, type Fiche, type Cle, type Etape } from "@/lib/supabase";
+import {
+  getFicheBySlug,
+  getClesByFiche,
+  getEtapeById,
+  formatDuree,
+  type Fiche,
+  type Cle,
+  type Etape,
+} from "@/lib/supabase";
+import AppHeader from "@/components/AppHeader";
 
-function renderList(data: any): React.ReactNode {
-  if (!data) return null;
-  if (typeof data === "string") return <p className="leading-relaxed">{data}</p>;
-  if (Array.isArray(data)) {
-    return (
-      <ul className="space-y-2">
-        {data.map((item: any, i: number) => (
-          <li key={i} className="flex gap-2.5">
-            <span className="shrink-0 mt-0.5" style={{ color: "#00989D" }}>•</span>
-            <div>
-              {typeof item === "string" ? (
-                <span>{item}</span>
-              ) : item.titre || item.title || item.item ? (
-                <>
-                  <span className="font-semibold" style={{ color: "#2B3442" }}>
-                    {item.titre || item.title || item.item}
-                  </span>
-                  {(item.détail || item.detail || item.description) && (
-                    <span className="ml-1">{item.détail || item.detail || item.description}</span>
-                  )}
-                </>
-              ) : (
-                <span>{Object.values(item).join(" — ")}</span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return <p>{String(data)}</p>;
-}
-
-function renderDeroule(data: any): React.ReactNode {
-  if (!data || !Array.isArray(data)) return renderList(data);
-  return (
-    <div className="space-y-4">
-      {data.map((step: any, i: number) => (
-        <div key={i} className="rounded-lg border-l-4 bg-white p-4"
-          style={{ borderColor: "#00989D" }}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center"
-                style={{ backgroundColor: "#2B3442" }}>
-                {step.étape || step.etape || i + 1}
-              </span>
-              <span className="font-bold" style={{ color: "#2B3442" }}>
-                {step.titre || step.title || `Étape ${i + 1}`}
-              </span>
-            </div>
-            {(step.durée || step.duree) && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: "#2B3442", color: "white" }}>
-                {step.durée || step.duree}
-              </span>
-            )}
-          </div>
-          {step.actions && Array.isArray(step.actions) && (
-            <ul className="space-y-1.5 ml-9">
-              {step.actions.map((a: string, j: number) => (
-                <li key={j} className="text-sm leading-relaxed" style={{ color: "rgba(43,52,66,0.7)" }}>
-                  • <span dangerouslySetInnerHTML={{ __html: a }} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+function parseJSON(val: any): any {
+  if (!val) return null;
+  if (typeof val === "object") return val;
+  try { return JSON.parse(val); } catch { return val; }
 }
 
 export default function FicheDetailPage({ params }: { params: { slug: string } }) {
@@ -81,6 +24,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
   const [cles, setCles] = useState<Cle[]>([]);
   const [etape, setEtape] = useState<Etape | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -99,125 +43,275 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
     load();
   }, [params.slug]);
 
-  if (loading) return <div className="max-w-3xl mx-auto px-4 py-20 text-center" style={{ color: "rgba(43,52,66,0.4)" }}>Chargement...</div>;
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--blanc)" }}>
+        <AppHeader searchQuery="" onSearchChange={() => {}} />
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "80px 28px", textAlign: "center", color: "var(--muted)" }}>
+          Chargement…
+        </div>
+      </div>
+    );
+  }
 
   if (!fiche) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "#2B3442" }}>Fiche introuvable</h1>
-        <Link href="/bao" className="mt-4 inline-block hover:underline" style={{ color: "#00989D" }}>← Retour</Link>
+      <div style={{ minHeight: "100vh", background: "var(--blanc)" }}>
+        <AppHeader searchQuery="" onSearchChange={() => {}} />
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "80px 28px", textAlign: "center" }}>
+          <h1 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", marginBottom: "12px" }}>Fiche introuvable</h1>
+          <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontWeight: 600 }}>← Retour aux outils</Link>
+        </div>
       </div>
     );
   }
 
   const duree = formatDuree(fiche);
+  const stepColor = etape?.couleur_hex || "var(--canard)";
+  const objectifs = parseJSON(fiche.objectifs);
+  const materielListe = parseJSON(fiche.materiel_liste);
+  const deroule = parseJSON(fiche.deroule);
+  const conseils = parseJSON(fiche.conseils);
+  const variantes = parseJSON(fiche.variantes);
+
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://odadaqpihvcnuprkdchr.supabase.co";
+  const pdfUrl = fiche.pdf_url
+    ? fiche.pdf_url.startsWith("http")
+      ? fiche.pdf_url
+      : `${SUPABASE_URL}/storage/v1/object/public/fiches-pdf/${fiche.pdf_url.replace(/^\/?(pdfs\/)?/, "")}`
+    : null;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <Link href="/bao" className="text-sm hover:underline inline-flex items-center gap-1 mb-6" style={{ color: "#00989D" }}>← Retour aux outils</Link>
+    <div style={{ minHeight: "100vh", background: "var(--blanc)" }}>
+      <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-      {/* Etape badge */}
-      {etape && (
-        <span className="inline-block text-xs font-bold tracking-wide uppercase px-3 py-1.5 rounded mb-4"
-          style={{ backgroundColor: etape.couleur_hex ? `${etape.couleur_hex}15` : "rgba(0,152,157,0.08)", color: etape.couleur_hex || "#00989D" }}>
-          {etape.code} · {etape.nom}
-        </span>
-      )}
+      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 28px 80px" }}>
+        {/* Back link */}
+        <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px", marginBottom: "28px" }}>
+          ← Retour aux outils
+        </Link>
 
-      <h1 className="text-3xl font-bold mb-2" style={{ color: "#2B3442" }}>{fiche.nom}</h1>
-
-      {/* Metadata grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-5 bg-white rounded-xl border mb-6" style={{ borderColor: "rgba(43,52,66,0.08)" }}>
-        {duree && <div><div className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "rgba(43,52,66,0.35)" }}>Durée</div><div className="font-semibold text-sm">{duree}</div></div>}
-        {fiche.format && <div><div className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "rgba(43,52,66,0.35)" }}>Format</div><div className="font-semibold text-sm">{fiche.format}</div></div>}
-        {fiche.materiel && <div><div className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "rgba(43,52,66,0.35)" }}>Matériel</div><div className="font-semibold text-sm">{fiche.materiel}</div></div>}
-        {fiche.source && <div><div className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "rgba(43,52,66,0.35)" }}>Source</div><div className="font-semibold text-sm">{fiche.source}</div></div>}
-        {fiche.public_pro_pair && <div><div className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "rgba(43,52,66,0.35)" }}>Public visé</div><div className="font-semibold text-sm">{fiche.public_pro_pair}</div></div>}
-      </div>
-
-      {/* Intention — teal bg */}
-      {fiche.intention && (
-        <div className="rounded-xl p-5 mb-6" style={{ backgroundColor: "rgba(0,152,157,0.08)" }}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#00989D" }}>L&apos;intention</div>
-          <p className="text-[15px] leading-relaxed italic" style={{ color: "#2B3442" }}>{fiche.intention}</p>
-        </div>
-      )}
-
-      {/* Pourquoi — gold bg */}
-      {fiche.pourquoi && (
-        <div className="rounded-xl p-5 mb-6" style={{ backgroundColor: "rgba(252,195,62,0.12)" }}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#B8860B" }}>Pourquoi cet outil fonctionne</div>
-          <p className="text-[15px] leading-relaxed" style={{ color: "#2B3442" }}>{fiche.pourquoi}</p>
-        </div>
-      )}
-
-      {/* Matériel liste */}
-      {fiche.materiel_liste && Array.isArray(fiche.materiel_liste) && fiche.materiel_liste.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#2B3442" }}>Ce dont vous avez besoin</h2>
-          <div className="bg-white rounded-xl border p-5" style={{ borderColor: "rgba(43,52,66,0.08)" }}>
-            {renderList(fiche.materiel_liste)}
+        {/* Step badge */}
+        {etape && (
+          <div style={{ marginBottom: "16px" }}>
+            <span style={{
+              display: "inline-block", fontSize: "11px", fontWeight: 700,
+              letterSpacing: "0.05em", padding: "5px 12px", borderRadius: "14px",
+              color: "white", textTransform: "uppercase", background: stepColor,
+            }}>
+              {etape.code} · {etape.nom}
+            </span>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Objectifs */}
-      {fiche.objectifs && Array.isArray(fiche.objectifs) && fiche.objectifs.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#2B3442" }}>Objectifs pédagogiques</h2>
-          <div style={{ color: "rgba(43,52,66,0.75)" }}>{renderList(fiche.objectifs)}</div>
-        </div>
-      )}
+        {/* Title */}
+        <h1 style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, marginBottom: "20px", color: "var(--anthracite)" }}>
+          {fiche.nom}
+        </h1>
 
-      {/* Déroulé */}
-      {fiche.deroule && Array.isArray(fiche.deroule) && fiche.deroule.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#2B3442" }}>Le déroulé, étape par étape</h2>
-          {renderDeroule(fiche.deroule)}
+        {/* Metadata grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px 24px", margin: "20px 0 24px", padding: "20px 24px", background: "white", borderRadius: "14px", border: "2px solid var(--line)" }}>
+          {duree && <MetaItem label="Durée" value={duree} />}
+          {fiche.format && <MetaItem label="Format" value={fiche.format} />}
+          {fiche.materiel && <MetaItem label="Matériel" value={fiche.materiel} />}
+          {fiche.participants && <MetaItem label="Participants" value={fiche.participants} />}
+          {fiche.pour_qui && <MetaItem label="Pour qui" value={fiche.pour_qui} />}
+          {fiche.source && <MetaItem label="Source" value={fiche.source} />}
         </div>
-      )}
 
-      {/* Conseils — pink bg */}
-      {fiche.conseils && Array.isArray(fiche.conseils) && fiche.conseils.length > 0 && (
-        <div className="rounded-xl p-5 mb-6" style={{ backgroundColor: "rgba(107,36,104,0.06)" }}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#6B2468" }}>Conseils pour bien animer</div>
-          <div style={{ color: "rgba(43,52,66,0.75)" }}>{renderList(fiche.conseils)}</div>
-        </div>
-      )}
+        {/* Clés */}
+        {cles.length > 0 && (
+          <div style={{ marginBottom: "24px" }}>
+            <SectionLabel text="Clés d'engagement" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {cles.map((cle) => (
+                <span key={cle.id} style={{ fontSize: "11px", padding: "4px 10px", borderRadius: "10px", color: "white", fontWeight: 600, background: cle.couleur_hex || "var(--canard)" }}>
+                  {cle.nom}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {/* Variantes — gold bg */}
-      {fiche.variantes && Array.isArray(fiche.variantes) && fiche.variantes.length > 0 && (
-        <div className="rounded-xl p-5 mb-6" style={{ backgroundColor: "rgba(252,195,62,0.1)" }}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#B8860B" }}>Variantes possibles</div>
-          <div style={{ color: "rgba(43,52,66,0.75)" }}>{renderList(fiche.variantes)}</div>
-        </div>
-      )}
+        {/* Intention */}
+        {fiche.intention && (
+          <div style={{ padding: "18px 20px 18px 28px", borderRadius: "12px", background: "#e0f3f4", position: "relative", marginBottom: "12px" }}>
+            <div style={{ position: "absolute", left: 0, top: "8px", bottom: "8px", width: "4px", borderRadius: "2px", background: "var(--canard)" }} />
+            <SectionLabel text="L'intention" color="var(--canard-dark)" />
+            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)", fontStyle: "italic" }}>{fiche.intention}</div>
+          </div>
+        )}
 
-      {/* Clés */}
-      {cles.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#2B3442" }}>Clés d&apos;engagement activées</h2>
-          <div className="flex flex-wrap gap-2">
-            {cles.map((cle) => (
-              <span key={cle.id} className="text-sm px-3.5 py-1.5 rounded-full font-semibold"
-                style={{ backgroundColor: cle.couleur_hex || "#00989D", color: "white" }}>
-                {cle.nom.split(" (")[0]}
-              </span>
+        {/* Pourquoi */}
+        {fiche.pourquoi && (
+          <div style={{ padding: "18px 20px 18px 28px", borderRadius: "12px", background: "#fff7df", position: "relative", marginBottom: "32px" }}>
+            <div style={{ position: "absolute", left: 0, top: "8px", bottom: "8px", width: "4px", borderRadius: "2px", background: "var(--jaune-dark)" }} />
+            <SectionLabel text="Pourquoi cet outil fonctionne" color="var(--jaune-accent)" />
+            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)" }}>{fiche.pourquoi}</div>
+          </div>
+        )}
+
+        {/* Matériel liste */}
+        {materielListe && Array.isArray(materielListe) && materielListe.length > 0 && (
+          <div style={{ marginBottom: "32px" }}>
+            <SectionHeading text="Ce dont vous avez besoin" />
+            <div style={{ background: "white", borderRadius: "12px", border: "2px solid var(--line)", padding: "4px 0" }}>
+              {materielListe.map((item: any, i: number) => {
+                const text = typeof item === "string" ? item : item.item || item.titre || Object.values(item).join(" – ");
+                return (
+                  <div key={i} style={{ padding: "11px 18px", borderBottom: i < materielListe.length - 1 ? "1px solid var(--line)" : "none", fontSize: "15px", display: "flex", gap: "10px", alignItems: "baseline", lineHeight: 1.45 }}>
+                    <span style={{ color: "var(--canard)", fontWeight: 700, flexShrink: 0 }}>•</span>
+                    <span>{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Objectifs */}
+        {objectifs && Array.isArray(objectifs) && objectifs.length > 0 && (
+          <div style={{ marginBottom: "32px" }}>
+            <SectionHeading text="Objectifs pédagogiques" />
+            {objectifs.map((obj: any, i: number) => {
+              const title = typeof obj === "string" ? obj : obj.titre || obj.title || obj.objectif;
+              const detail = typeof obj === "object" ? (obj.détail || obj.detail || obj.description) : null;
+              return (
+                <div key={i} style={{ marginBottom: "14px" }}>
+                  <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--canard-dark)", display: "flex", alignItems: "baseline", gap: "8px" }}>
+                    <span style={{ color: "var(--canard)", fontWeight: 800 }}>→</span>
+                    <span>{title}</span>
+                  </div>
+                  {detail && <div style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, paddingLeft: "20px", marginTop: "4px" }}>{detail}</div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Déroulé */}
+        {deroule && Array.isArray(deroule) && deroule.length > 0 && (
+          <div style={{ marginBottom: "32px" }}>
+            <SectionHeading text="Le déroulé, étape par étape" />
+            {deroule.map((step: any, i: number) => (
+              <div key={i} style={{ background: "white", borderRadius: "12px", border: "2px solid var(--line)", padding: "18px 22px 18px 24px", marginBottom: "14px", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", left: 0, top: "12px", bottom: "12px", width: "5px", background: stepColor, borderRadius: "2px" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px", paddingBottom: "12px", borderBottom: "1px solid var(--line)" }}>
+                  <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: stepColor, color: "white", fontWeight: 800, fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {step.étape || step.etape || i + 1}
+                  </span>
+                  <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--anthracite)", flexGrow: 1 }}>
+                    {step.titre || step.title || `Étape ${i + 1}`}
+                  </span>
+                  {(step.durée || step.duree) && (
+                    <span style={{ fontSize: "12px", fontWeight: 700, background: stepColor, color: "white", padding: "4px 10px", borderRadius: "10px", whiteSpace: "nowrap" }}>
+                      {step.durée || step.duree}
+                    </span>
+                  )}
+                </div>
+                {step.actions && Array.isArray(step.actions) && (
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {step.actions.map((a: string, j: number) => (
+                      <li key={j} style={{ padding: "5px 0 5px 18px", fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, position: "relative" }}>
+                        <span style={{ position: "absolute", left: "4px", top: "12px", width: "5px", height: "5px", borderRadius: "50%", background: stepColor }} />
+                        <span dangerouslySetInnerHTML={{ __html: a }} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* PDF + actions */}
-      {fiche.pdf_url && (
-        <div className="mt-8 flex flex-wrap gap-3 justify-center border-t border-dashed pt-8" style={{ borderColor: "rgba(43,52,66,0.15)" }}>
-          <a href={fiche.pdf_url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 font-bold rounded-full transition-colors hover:opacity-90 text-sm"
-            style={{ backgroundColor: "#00989D", color: "white" }}>
-            ↓ Télécharger la fiche PDF
-          </a>
-        </div>
-      )}
+        {/* Conseils */}
+        {conseils && Array.isArray(conseils) && conseils.length > 0 && (
+          <div style={{ marginBottom: "32px" }}>
+            <SectionHeading text="Conseils pour bien animer" />
+            <div style={{ padding: "16px 20px", borderRadius: "12px", background: "#f5e9f3", borderLeft: "4px solid var(--prune)" }}>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {conseils.map((c: any, i: number) => {
+                  const text = typeof c === "string" ? c : c.conseil || c.titre || c.text || Object.values(c).join(" – ");
+                  return (
+                    <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
+                      <span style={{ position: "absolute", left: 0, fontWeight: 700, color: "var(--prune)" }}>→</span>
+                      {text}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Variantes */}
+        {variantes && Array.isArray(variantes) && variantes.length > 0 && (
+          <div style={{ marginBottom: "32px" }}>
+            <SectionHeading text="Variantes possibles" />
+            <div style={{ padding: "16px 20px", borderRadius: "12px", background: "#fff7df", borderLeft: "4px solid var(--jaune-accent)" }}>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {variantes.map((v: any, i: number) => {
+                  const text = typeof v === "string" ? v : v.variante || v.titre || v.text || Object.values(v).join(" – ");
+                  return (
+                    <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
+                      <span style={{ position: "absolute", left: 0, fontWeight: 900, color: "var(--jaune-accent)", fontSize: "18px", lineHeight: 1, top: "4px" }}>·</span>
+                      {text}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* PDF button */}
+        {pdfUrl && (
+          <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" style={{
+              padding: "11px 20px", border: "2px solid var(--canard)", background: "var(--canard)", color: "white",
+              fontFamily: "inherit", fontSize: "13px", fontWeight: 700, cursor: "pointer", borderRadius: "24px",
+              transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: "8px",
+              letterSpacing: "0.02em", textDecoration: "none",
+            }}>
+              ↓ Télécharger la fiche PDF
+            </a>
+          </div>
+        )}
+
+        {/* Source */}
+        {fiche.source && (
+          <div style={{ marginTop: "32px", paddingTop: "20px", borderTop: "1px dashed var(--line-strong)", fontSize: "13px", color: "var(--muted)" }}>
+            <strong>Source :</strong> {fiche.source}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Sub-components ── */
+
+function MetaItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>{label}</span>
+      <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--anthracite)", lineHeight: 1.4 }}>{value}</span>
+    </div>
+  );
+}
+
+function SectionLabel({ text, color }: { text: string; color?: string }) {
+  return (
+    <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px", color: color || "var(--muted)" }}>
+      {text}
+    </div>
+  );
+}
+
+function SectionHeading({ text }: { text: string }) {
+  return (
+    <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--anthracite)", letterSpacing: "-0.015em", lineHeight: 1.1, marginBottom: "16px" }}>
+      {text}
     </div>
   );
 }
