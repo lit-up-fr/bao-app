@@ -67,6 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/parcours", label: "Parcours", icon: "🗺" },
     { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑" },
     { href: "/admin/etapes", label: "Étapes", icon: "📍" },
+    { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥" },
   ];
 
   return (
