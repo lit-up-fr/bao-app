@@ -189,14 +189,18 @@ export async function toggleFavori(userId: string, ficheId: string) {
   // Vérifier si le favori existe
   const { data } = await supabase
     .from("favoris")
-    .select("id")
+    .select("fiche_id")
     .eq("user_id", userId)
     .eq("fiche_id", ficheId)
-    .single();
+    .maybeSingle();
 
   if (data) {
     // Supprimer
-    await supabase.from("favoris").delete().eq("id", data.id);
+    await supabase
+      .from("favoris")
+      .delete()
+      .eq("user_id", userId)
+      .eq("fiche_id", ficheId);
     return false;
   } else {
     // Ajouter

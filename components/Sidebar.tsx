@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { Etape, Cle } from "@/lib/supabase";
 
 interface SidebarProps {
@@ -95,7 +96,7 @@ function Chip({
   );
 }
 
-export default function Sidebar({
+function SidebarContent({
   etapes,
   cles,
   formats,
@@ -113,19 +114,7 @@ export default function Sidebar({
     activeEtapes.length > 0 || activeCles.length > 0 || activeFormats.length > 0;
 
   return (
-    <aside
-      style={{
-        borderRight: "2px solid var(--line)",
-        padding: "24px 22px",
-        position: "sticky",
-        top: "70px",
-        height: "calc(100vh - 70px)",
-        overflowY: "auto",
-        background: "white",
-        width: "280px",
-        flexShrink: 0,
-      }}
-    >
+    <>
       {/* Étapes */}
       <div style={{ marginBottom: "24px" }}>
         <div
@@ -247,6 +236,195 @@ export default function Sidebar({
           ↺ Réinitialiser les filtres
         </button>
       )}
-    </aside>
+    </>
+  );
+}
+
+export default function Sidebar(props: SidebarProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const filterCount =
+    props.activeEtapes.length + props.activeCles.length + props.activeFormats.length;
+
+  return (
+    <>
+      <style>{`
+        .sidebar-desktop {
+          display: block;
+        }
+        .sidebar-mobile-trigger {
+          display: none !important;
+        }
+        .sidebar-drawer-overlay {
+          display: none !important;
+        }
+        .sidebar-drawer {
+          display: none !important;
+        }
+
+        @media (max-width: 768px) {
+          .sidebar-desktop {
+            display: none !important;
+          }
+          .sidebar-mobile-trigger {
+            display: flex !important;
+          }
+          .sidebar-drawer-overlay {
+            display: ${drawerOpen ? "block" : "none"} !important;
+          }
+          .sidebar-drawer {
+            display: ${drawerOpen ? "flex" : "none"} !important;
+          }
+        }
+      `}</style>
+
+      {/* Desktop sidebar */}
+      <aside
+        className="sidebar-desktop"
+        style={{
+          borderRight: "2px solid var(--line)",
+          padding: "24px 22px",
+          position: "sticky",
+          top: "70px",
+          height: "calc(100vh - 70px)",
+          overflowY: "auto",
+          background: "white",
+          width: "280px",
+          flexShrink: 0,
+        }}
+      >
+        <SidebarContent {...props} />
+      </aside>
+
+      {/* Mobile: floating filter button */}
+      <button
+        className="sidebar-mobile-trigger"
+        onClick={() => setDrawerOpen(true)}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 40,
+          padding: "12px 24px",
+          borderRadius: "24px",
+          border: "none",
+          background: "var(--canard-dark)",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: 700,
+          fontFamily: "inherit",
+          cursor: "pointer",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <span>☰ Filtres</span>
+        {filterCount > 0 && (
+          <span
+            style={{
+              background: "var(--jaune)",
+              color: "var(--anthracite)",
+              borderRadius: "10px",
+              padding: "2px 8px",
+              fontSize: "12px",
+              fontWeight: 700,
+            }}
+          >
+            {filterCount}
+          </span>
+        )}
+      </button>
+
+      {/* Mobile: overlay */}
+      <div
+        className="sidebar-drawer-overlay"
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.4)",
+          zIndex: 50,
+        }}
+        onClick={() => setDrawerOpen(false)}
+      />
+
+      {/* Mobile: drawer from bottom */}
+      <div
+        className="sidebar-drawer"
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          maxHeight: "80vh",
+          background: "white",
+          borderRadius: "20px 20px 0 0",
+          zIndex: 51,
+          flexDirection: "column",
+          boxShadow: "0 -4px 24px rgba(0,0,0,0.15)",
+        }}
+      >
+        {/* Drawer header */}
+        <div
+          style={{
+            padding: "16px 20px 12px",
+            borderBottom: "1px solid var(--line)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--anthracite)" }}>
+            Filtres
+          </span>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "22px",
+              cursor: "pointer",
+              color: "var(--muted)",
+              padding: "4px 8px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Drawer content */}
+        <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
+          <SidebarContent {...props} />
+        </div>
+
+        {/* Drawer footer */}
+        <div
+          style={{
+            padding: "12px 20px 20px",
+            borderTop: "1px solid var(--line)",
+            flexShrink: 0,
+          }}
+        >
+          <button
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              width: "100%",
+              padding: "14px",
+              borderRadius: "12px",
+              border: "none",
+              background: "var(--canard-dark)",
+              color: "white",
+              fontSize: "15px",
+              fontWeight: 700,
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            Voir les résultats
+          </button>
+        </div>
+      </div>
+    </>
   );
 }

@@ -2,15 +2,19 @@
 
 import type { Fiche, Cle, Etape } from "@/lib/supabase";
 import { formatDuree } from "@/lib/supabase";
+import FavoriButton from "@/components/FavoriButton";
 
 interface FicheCardProps {
   fiche: Fiche;
   cles: Cle[];
   etape: Etape | null;
   onClick: () => void;
+  userId?: string | null;
+  isFavori?: boolean;
+  onFavoriToggle?: (ficheId: string, newState: boolean) => void;
 }
 
-export default function FicheCard({ fiche, cles, etape, onClick }: FicheCardProps) {
+export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavori, onFavoriToggle }: FicheCardProps) {
   const duree = formatDuree(fiche);
   const stepColor = etape?.couleur_hex || "var(--muted)";
 
@@ -57,7 +61,7 @@ export default function FicheCard({ fiche, cles, etape, onClick }: FicheCardProp
         }}
       />
 
-      {/* Header: step badge + audience */}
+      {/* Header: step badge + favori + audience */}
       <div
         style={{
           display: "flex",
@@ -97,25 +101,32 @@ export default function FicheCard({ fiche, cles, etape, onClick }: FicheCardProp
           </span>
         )}
 
-        {fiche.public_pro_pair && (
-          <span
-            style={{
-              fontSize: "9px",
-              letterSpacing: "0.08em",
-              color: "var(--muted)",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              background: "var(--blanc)",
-              padding: "3px 7px",
-              borderRadius: "8px",
-              position: "absolute",
-              top: "14px",
-              right: "14px",
-            }}
-          >
-            {fiche.public_pro_pair}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          {userId && (
+            <FavoriButton
+              ficheId={fiche.id}
+              userId={userId}
+              isFavori={isFavori || false}
+              onToggle={(newState) => onFavoriToggle?.(fiche.id, newState)}
+            />
+          )}
+          {fiche.public_pro_pair && (
+            <span
+              style={{
+                fontSize: "9px",
+                letterSpacing: "0.08em",
+                color: "var(--muted)",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                background: "var(--blanc)",
+                padding: "3px 7px",
+                borderRadius: "8px",
+              }}
+            >
+              {fiche.public_pro_pair}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Title */}

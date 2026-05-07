@@ -9,10 +9,10 @@ import type { User } from "@supabase/supabase-js";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  // Don't protect the login page
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
@@ -39,17 +39,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => subscription.unsubscribe();
   }, [router, isLoginPage]);
 
+  // Fermer le menu quand on change de page
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/admin/login");
   };
 
-  // Login page: render without layout
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
+  if (isLoginPage) return <>{children}</>;
 
-  // Loading
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--blanc)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>
@@ -58,7 +59,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Not authenticated
   if (!user) return null;
 
   const navItems = [
@@ -71,114 +71,206 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "var(--blanc)" }}>
-      {/* Sidebar */}
-      <aside
-        style={{
-          width: "260px",
-          background: "var(--anthracite)",
-          color: "white",
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0,
-          position: "fixed",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          zIndex: 50,
-        }}
-      >
-        {/* Logo */}
-        <div style={{ padding: "24px 22px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+    <>
+      <style>{`
+        @media (max-width: 768px) {
+          .admin-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            width: 280px !important;
+          }
+          .admin-sidebar.open {
+            transform: translateX(0);
+          }
+          .admin-main {
+            margin-left: 0 !important;
+            padding: 16px !important;
+            padding-top: 72px !important;
+          }
+          .admin-overlay {
+            display: block !important;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 40;
+          }
+          .admin-mobile-header {
+            display: flex !important;
+          }
+          .admin-table-responsive {
+            overflow-x: auto;
+          }
+        }
+        @media (min-width: 769px) {
+          .admin-sidebar {
+            transform: translateX(0) !important;
+          }
+          .admin-overlay {
+            display: none !important;
+          }
+          .admin-mobile-header {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      <div style={{ minHeight: "100vh", display: "flex", background: "var(--blanc)" }}>
+        {/* Mobile header bar */}
+        <div
+          className="admin-mobile-header"
+          style={{
+            display: "none",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "56px",
+            background: "var(--anthracite)",
+            zIndex: 45,
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 16px",
+          }}
+        >
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              fontSize: "24px",
+              cursor: "pointer",
+              padding: "4px 8px",
+            }}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
           <img
             src="/logo-litup-white.png"
             alt="Lit uP"
-            style={{ height: "28px", width: "auto", display: "block", marginBottom: "8px" }}
+            style={{ height: "24px" }}
           />
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Administration
-          </span>
+          <div style={{ width: "40px" }} />
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-            return (
+        {/* Overlay mobile */}
+        {menuOpen && (
+          <div
+            className="admin-overlay"
+            style={{ display: "none" }}
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <aside
+          className={`admin-sidebar${menuOpen ? " open" : ""}`}
+          style={{
+            width: "260px",
+            background: "var(--anthracite)",
+            color: "white",
+            display: "flex",
+            flexDirection: "column",
+            flexShrink: 0,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            zIndex: 50,
+          }}
+        >
+          {/* Logo */}
+          <div style={{ padding: "24px 22px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-litup-white.png"
+              alt="Lit uP"
+              style={{ height: "28px", width: "auto", display: "block", marginBottom: "8px" }}
+            />
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Administration
+            </span>
+          </div>
+
+          {/* Nav */}
+          <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: "4px", overflowY: "auto" }}>
+            {navItems.map((item) => {
+              const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    color: isActive ? "white" : "rgba(255,255,255,0.6)",
+                    background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: "18px" }}>{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User + logout */}
+          <div style={{ padding: "16px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user.email}
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
               <Link
-                key={item.href}
-                href={item.href}
+                href="/bao"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "10px 14px",
-                  borderRadius: "10px",
-                  fontSize: "14px",
+                  flex: 1,
+                  padding: "8px",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "12px",
                   fontWeight: 600,
+                  color: "rgba(255,255,255,0.7)",
                   textDecoration: "none",
-                  color: isActive ? "white" : "rgba(255,255,255,0.6)",
-                  background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                  transition: "all 0.15s",
+                  textAlign: "center",
+                  cursor: "pointer",
                 }}
               >
-                <span style={{ fontSize: "18px" }}>{item.icon}</span>
-                {item.label}
+                Voir le site
               </Link>
-            );
-          })}
-        </nav>
-
-        {/* User + logout */}
-        <div style={{ padding: "16px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {user.email}
+              <button
+                onClick={handleLogout}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.7)",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <Link
-              href="/bao"
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: "rgba(255,255,255,0.08)",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.7)",
-                textDecoration: "none",
-                textAlign: "center",
-                cursor: "pointer",
-              }}
-            >
-              Voir le site
-            </Link>
-            <button
-              onClick={handleLogout}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: "rgba(255,255,255,0.08)",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.7)",
-                fontFamily: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </aside>
+        </aside>
 
-      {/* Main content */}
-      <main style={{ flex: 1, marginLeft: "260px", padding: "32px 40px" }}>
-        {children}
-      </main>
-    </div>
+        {/* Main content */}
+        <main className="admin-main" style={{ flex: 1, marginLeft: "260px", padding: "32px 40px" }}>
+          {children}
+        </main>
+      </div>
+    </>
   );
 }
