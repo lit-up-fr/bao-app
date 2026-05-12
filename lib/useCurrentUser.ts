@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { getFavoris } from "@/lib/auth";
+import { getFavoris, getProfileByUserId } from "@/lib/auth";
 
 export function useCurrentUser() {
   const [userId, setUserId] = useState<string | null>(null);
   const [favorisIds, setFavorisIds] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -14,8 +15,12 @@ export function useCurrentUser() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
-        const favs = await getFavoris(session.user.id);
+        const [favs, profile] = await Promise.all([
+          getFavoris(session.user.id),
+          getProfileByUserId(session.user.id),
+        ]);
         setFavorisIds(favs);
+        if (profile?.is_admin) setIsAdmin(true);
       }
       setLoaded(true);
     }
@@ -28,5 +33,5 @@ export function useCurrentUser() {
     );
   }
 
-  return { userId, favorisIds, updateFavori, loaded };
+  return { userId, favorisIds, updateFavori, isAdmin, loaded };
 }

@@ -100,28 +100,57 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
       <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       <div style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 28px 80px" }}>
-        {/* Back link */}
-        <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px", marginBottom: "28px" }}>
-          Retour aux outils
-        </Link>
+        {/* Back link + Edit button */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+          <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            Retour aux outils
+          </Link>
+          {isAdmin && (
+            <Link
+              href={`/admin/fiches/${fiche.id}/edit`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 14px",
+                borderRadius: "8px",
+                border: "1.5px solid var(--canard)",
+                background: "white",
+                color: "var(--canard)",
+                fontSize: "13px",
+                fontWeight: 600,
+                textDecoration: "none",
+                fontFamily: "inherit",
+              }}
+            >
+              ✏️ Modifier
+            </Link>
+          )}
+        </div>
 
-        {/* Step badge */}
+        {/* Emoji + Title */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "20px" }}>
+          <span style={{ fontSize: "40px", lineHeight: 1, flexShrink: 0 }}>
+            {(fiche as any).emoji || "🔧"}
+          </span>
+          <h1 style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, color: "var(--anthracite)", margin: 0 }}>
+            {fiche.nom}
+          </h1>
+        </div>
+
+        {/* Step badge (small, outline) */}
         {etape && (
           <div style={{ marginBottom: "16px" }}>
             <span style={{
-              display: "inline-block", fontSize: "11px", fontWeight: 700,
-              letterSpacing: "0.05em", padding: "5px 12px", borderRadius: "14px",
-              color: "white", textTransform: "uppercase", background: stepColor,
+              display: "inline-block", fontSize: "10px", fontWeight: 700,
+              letterSpacing: "0.03em", padding: "3px 10px", borderRadius: "8px",
+              color: stepColor, border: `1.5px solid ${stepColor}`, background: "white",
+              textTransform: "uppercase",
             }}>
               {etape.code} - {etape.nom}
             </span>
           </div>
         )}
-
-        {/* Title */}
-        <h1 style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, marginBottom: "20px", color: "var(--anthracite)" }}>
-          {fiche.nom}
-        </h1>
 
         {/* Illustrations carrousel */}
         {illustrationsList.length > 0 && (

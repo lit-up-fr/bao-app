@@ -47,7 +47,7 @@ export default function BaoPage() {
   const [selectedFiche, setSelectedFiche] = useState<FicheWithMeta | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
 
-  const { userId, favorisIds, updateFavori } = useCurrentUser();
+  const { userId, favorisIds, updateFavori, isAdmin } = useCurrentUser();
 
   // Afficher la modale de bienvenue à la première visite
   useEffect(() => {
@@ -301,7 +301,7 @@ export default function BaoPage() {
         </div>
 
         {selectedFiche && (
-          <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} userId={userId} />
+          <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} userId={userId} isAdmin={isAdmin} />
         )}
 
         {showWelcome && (

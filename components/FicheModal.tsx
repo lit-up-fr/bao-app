@@ -72,8 +72,32 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
           borderRadius: "20px",
         }}
       >
-        {/* Close + Fullscreen buttons */}
+        {/* Close + Fullscreen + Edit buttons */}
         <div style={{ position: "absolute", top: "16px", right: "16px", display: "flex", gap: "8px" }}>
+          {isAdmin && (
+            <Link
+              href={`/admin/fiches/${fiche.id}/edit`}
+              style={{
+                background: "var(--blanc)",
+                border: "none",
+                fontSize: "14px",
+                cursor: "pointer",
+                color: "var(--canard)",
+                lineHeight: 1,
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                transition: "all 0.2s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+              }}
+              title="Modifier cette fiche"
+            >
+              ✏️
+            </Link>
+          )}
           <Link
             href={`/bao/${fiche.slug || slugify(fiche.nom)}`}
             style={{
@@ -118,39 +142,45 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
           </button>
         </div>
 
-        {/* Step badge */}
+        {/* Emoji + Title */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "20px" }}>
+          <span style={{ fontSize: "40px", lineHeight: 1, flexShrink: 0 }}>
+            {(fiche as any).emoji || "🔧"}
+          </span>
+          <h1
+            style={{
+              fontSize: "36px",
+              fontWeight: 800,
+              letterSpacing: "-0.025em",
+              lineHeight: 1.1,
+              color: "var(--anthracite)",
+              margin: 0,
+            }}
+          >
+            {fiche.nom}
+          </h1>
+        </div>
+
+        {/* Step badge (small, under title) */}
         {etape && (
           <span
             style={{
               display: "inline-block",
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: 700,
-              letterSpacing: "0.05em",
-              padding: "5px 12px",
-              borderRadius: "14px",
-              color: "white",
+              letterSpacing: "0.03em",
+              padding: "3px 10px",
+              borderRadius: "8px",
+              color: stepColor,
+              border: `1.5px solid ${stepColor}`,
+              background: "white",
               marginBottom: "16px",
               textTransform: "uppercase",
-              background: stepColor,
             }}
           >
-            {etape.code} · {etape.nom}
+            {etape.code} - {etape.nom}
           </span>
         )}
-
-        {/* Title */}
-        <h1
-          style={{
-            fontSize: "36px",
-            fontWeight: 800,
-            letterSpacing: "-0.025em",
-            lineHeight: 1.1,
-            marginBottom: "20px",
-            color: "var(--anthracite)",
-          }}
-        >
-          {fiche.nom}
-        </h1>
 
         {/* Metadata grid */}
         <div
