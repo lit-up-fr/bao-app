@@ -17,6 +17,7 @@ interface FicheCardProps {
 export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavori, onFavoriToggle }: FicheCardProps) {
   const duree = formatDuree(fiche);
   const stepColor = etape?.couleur_hex || "var(--muted)";
+  const emoji = (fiche as any).emoji || null;
 
   return (
     <button
@@ -61,7 +62,7 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
         }}
       />
 
-      {/* Header: step badge + favori + audience */}
+      {/* Header: emoji + favori + audience */}
       <div
         style={{
           display: "flex",
@@ -71,35 +72,9 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
           gap: "10px",
         }}
       >
-        {etape ? (
-          <span
-            style={{
-              fontSize: "12px",
-              fontWeight: 800,
-              letterSpacing: "0.04em",
-              padding: "4px 10px",
-              borderRadius: "12px",
-              color: "white",
-              flexShrink: 0,
-              textTransform: "uppercase",
-              background: stepColor,
-            }}
-          >
-            {etape.code}
-          </span>
-        ) : (
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 600,
-              color: "var(--muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-          >
-            Non classé
-          </span>
-        )}
+        <span style={{ fontSize: "28px", lineHeight: 1 }}>
+          {emoji || "🔧"}
+        </span>
 
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           {userId && (
@@ -173,79 +148,75 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
         }}
       >
         {duree && (
-          <span
-            style={{
-              fontSize: "11px",
-              padding: "3px 9px",
-              borderRadius: "10px",
-              background: "var(--blanc)",
-              color: "var(--anthracite-soft)",
-              fontWeight: 500,
-            }}
-          >
-            ⏱ {duree}
+          <span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "10px", background: "var(--blanc)", color: "var(--anthracite-soft)", fontWeight: 500 }}>
+            {duree}
           </span>
         )}
         {fiche.format && (
-          <span
-            style={{
-              fontSize: "11px",
-              padding: "3px 9px",
-              borderRadius: "10px",
-              background: "var(--blanc)",
-              color: "var(--anthracite-soft)",
-              fontWeight: 500,
-            }}
-          >
+          <span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "10px", background: "var(--blanc)", color: "var(--anthracite-soft)", fontWeight: 500 }}>
             {fiche.format}
           </span>
         )}
         {fiche.materiel && (
-          <span
-            style={{
-              fontSize: "11px",
-              padding: "3px 9px",
-              borderRadius: "10px",
-              background: "var(--blanc)",
-              color: "var(--anthracite-soft)",
-              fontWeight: 500,
-            }}
-          >
+          <span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "10px", background: "var(--blanc)", color: "var(--anthracite-soft)", fontWeight: 500 }}>
             {fiche.materiel}
           </span>
         )}
       </div>
 
-      {/* Key pills */}
-      {cles.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "4px",
-            marginTop: "auto",
-            paddingTop: "12px",
-            borderTop: "1px dashed var(--line)",
-          }}
-        >
-          {cles.map((cle) => (
-            <span
-              key={cle.id}
-              style={{
-                fontSize: "10px",
-                padding: "3px 8px",
-                borderRadius: "10px",
-                color: "white",
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                background: cle.couleur_hex || "var(--canard)",
-              }}
-            >
-              {cle.nom.split(" (")[0]}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Bottom section: cles + etape badge */}
+      <div
+        style={{
+          marginTop: "auto",
+          paddingTop: "12px",
+          borderTop: "1px dashed var(--line)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+        }}
+      >
+        {/* Key pills */}
+        {cles.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+            {cles.map((cle) => (
+              <span
+                key={cle.id}
+                style={{
+                  fontSize: "10px",
+                  padding: "3px 8px",
+                  borderRadius: "10px",
+                  color: "white",
+                  fontWeight: 600,
+                  letterSpacing: "0.02em",
+                  background: cle.couleur_hex || "var(--canard)",
+                }}
+              >
+                {cle.nom.split(" (")[0]}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Etape badge - now at bottom */}
+        {etape && (
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.03em",
+              padding: "3px 8px",
+              borderRadius: "8px",
+              color: stepColor,
+              border: `1.5px solid ${stepColor}`,
+              background: "white",
+              alignSelf: "flex-start",
+              textTransform: "uppercase",
+            }}
+          >
+            {etape.code} - {etape.nom}
+          </span>
+        )}
+      </div>
     </button>
   );
 }

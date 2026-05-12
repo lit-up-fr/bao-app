@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, type Cle, type Etape, slugify } from "@/lib/supabase";
+import RichTextEditor from "@/components/RichTextEditor";
 
 interface ObjectifItem { titre: string; detail: string }
 interface DerouleStep { titre: string; duree: string; actions: string[]; image_url?: string }
@@ -44,6 +45,7 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
   const [source, setSource] = useState("");
   const [publie, setPublie] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
+  const [emoji, setEmoji] = useState("");
 
   const [objectifs, setObjectifs] = useState<ObjectifItem[]>([]);
   const [materielListe, setMaterielListe] = useState<string[]>([]);
@@ -83,6 +85,7 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
           setSource(fiche.source || "");
           setPublie(fiche.publie || false);
           setPdfUrl(fiche.pdf_url || "");
+          setEmoji(fiche.emoji || "");
 
           setObjectifs(parseObjectifs(fiche.objectifs));
           setMaterielListe(parseStringList(fiche.materiel_liste));
@@ -263,6 +266,7 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
       conseils: serializeStringList(conseils),
       variantes: serializeStringList(variantes),
       source: source || null, publie, pdf_url: pdfUrl || null,
+      emoji: emoji || null,
       illustrations: illustrations.length > 0 ? illustrations : [],
       pdfs_complementaires: pdfsComplementaires.length > 0 ? pdfsComplementaires : [],
     };
@@ -304,6 +308,15 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
         <Field label="Nom de la fiche *">
           <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex: Brise-glace Antisava" style={inputStyle} />
         </Field>
+
+        <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "16px", alignItems: "end" }}>
+          <Field label="Emoji">
+            <input type="text" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="🔧" style={{ ...inputStyle, fontSize: "28px", textAlign: "center", padding: "6px" }} maxLength={4} />
+          </Field>
+          <div style={{ fontSize: "12px", color: "var(--muted)", paddingBottom: "12px" }}>
+            Choisissez un emoji pour illustrer l'outil (visible sur la carte). Exemples : 🤪 🎯 💬 🃏 🎨 🧭 🔥 💡 📝
+          </div>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <Field label="Etape du parcours">
@@ -383,10 +396,10 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
         {/* ═══ Contenu pedagogique ═══ */}
         <SectionTitle text="Contenu pedagogique" />
         <Field label="Intention">
-          <textarea value={intention} onChange={(e) => setIntention(e.target.value)} rows={2} placeholder="La phrase d'accroche..." style={{ ...inputStyle, resize: "vertical" }} />
+          <RichTextEditor value={intention} onChange={setIntention} placeholder="La phrase d'accroche..." rows={2} />
         </Field>
         <Field label="Pourquoi cet outil fonctionne">
-          <textarea value={pourquoi} onChange={(e) => setPourquoi(e.target.value)} rows={3} placeholder="Explication pedagogique..." style={{ ...inputStyle, resize: "vertical" }} />
+          <RichTextEditor value={pourquoi} onChange={setPourquoi} placeholder="Explication pedagogique..." rows={3} />
         </Field>
 
         {/* ═══ Objectifs ═══ */}
@@ -425,9 +438,11 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
             <div style={{ paddingLeft: "38px" }}>
               <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Actions</div>
               {step.actions.map((action, j) => (
-                <div key={j} style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
-                  <input type="text" value={action} onChange={(e) => { const copy = [...deroule]; copy[i].actions[j] = e.target.value; setDeroule(copy); }} placeholder={`Action ${j + 1}`} style={{ ...inputStyle, fontSize: "13px" }} />
-                  <button onClick={() => { const copy = [...deroule]; copy[i].actions = copy[i].actions.filter((_, k) => k !== j); setDeroule(copy); }} style={{ ...removeBtn, position: "relative", top: 0, right: 0, width: "32px", height: "32px", fontSize: "14px" }}>x</button>
+                <div key={j} style={{ display: "flex", gap: "8px", marginBottom: "6px", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    <RichTextEditor value={action} onChange={(val) => { const copy = [...deroule]; copy[i].actions[j] = val; setDeroule(copy); }} placeholder={`Action ${j + 1}`} rows={1} />
+                  </div>
+                  <button onClick={() => { const copy = [...deroule]; copy[i].actions = copy[i].actions.filter((_, k) => k !== j); setDeroule(copy); }} style={{ ...removeBtn, position: "relative", top: 0, right: 0, width: "32px", height: "32px", fontSize: "14px", marginTop: "6px" }}>x</button>
                 </div>
               ))}
               <button onClick={() => { const copy = [...deroule]; copy[i].actions = [...copy[i].actions, ""]; setDeroule(copy); }} style={{ ...addBtn, fontSize: "12px", padding: "4px 12px" }}>+ Action</button>
@@ -555,10 +570,11 @@ function SimpleList({ items, onChange, placeholder, itemLabel }: { items: string
   return (
     <>
       {items.map((item, i) => (
-        <div key={i} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span style={{ color: "var(--canard)", fontWeight: 700, flexShrink: 0, fontSize: "14px" }}>*</span>
-          <input type="text" value={item} onChange={(e) => { const copy = [...items]; copy[i] = e.target.value; onChange(copy); }} placeholder={placeholder} style={inputStyle} />
-          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ ...removeBtn, position: "relative", top: 0, right: 0, width: "32px", height: "32px", fontSize: "14px" }}>x</button>
+        <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+          <div style={{ flex: 1 }}>
+            <RichTextEditor value={item} onChange={(val) => { const copy = [...items]; copy[i] = val; onChange(copy); }} placeholder={placeholder} rows={1} />
+          </div>
+          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ ...removeBtn, position: "relative", top: 0, right: 0, width: "32px", height: "32px", fontSize: "14px", marginTop: "6px" }}>x</button>
         </div>
       ))}
       <button onClick={() => onChange([...items, ""])} style={addBtn}>+ Ajouter un {itemLabel}</button>
