@@ -214,3 +214,24 @@ h1, h2, h3, h4 {
     display: none !important;
   }
 }
+
+.landing-card {
+  transform: translateY(0);
+  transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.3s ease !important;
+}
+.landing-card:hover {
+  transform: translateY(-8px) !important;
+  box-shadow: 0 16px 40px rgba(43, 52, 66, 0.12) !important;
+}
+.landing-card:hover .landing-bubble {
+  transform: scale(1.25);
+}
+.landing-card:hover .landing-arrow {
+  transform: translateX(4px);
+}
+.landing-bubble {
+  transition: transform 0.4s ease;
+}
+.landing-arrow {
+  transition: transform 0.3s ease;
+}

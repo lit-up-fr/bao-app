@@ -51,7 +51,7 @@ export default function Home() {
               lineHeight: 1,
             }}
           >
-            la boîte à outils
+            la bo&icirc;te &agrave; outils
           </span>
         </div>
         <span
@@ -188,7 +188,7 @@ export default function Home() {
                 transform: "rotate(-2deg)",
               }}
             >
-              — aux jeunes comme aux équipes.
+              — aux jeunes comme aux &eacute;quipes.
             </span>
           </h1>
 
@@ -202,9 +202,9 @@ export default function Home() {
               marginBottom: "20px",
             }}
           >
-            Bienvenue dans la boîte à outils du{" "}
-            <strong>Laboratoire pédagogique Lit uP</strong>. Vous y trouverez
-            des méthodes concrètes, testées sur le terrain, pour animer, libérer
+            Bienvenue dans la bo&icirc;te &agrave; outils du{" "}
+            <strong>Laboratoire p&eacute;dagogique Lit uP</strong>. Vous y trouverez
+            des m&eacute;thodes concr&egrave;tes, test&eacute;es sur le terrain, pour animer, lib&eacute;rer
             la parole, construire un collectif et accompagner les jeunes dans
             leurs projets.
           </p>
@@ -218,7 +218,7 @@ export default function Home() {
               marginBottom: "48px",
             }}
           >
-            Gratuite, ouverte, faite pour être partagée.
+            Gratuite, ouverte, faite pour &ecirc;tre partag&eacute;e.
           </div>
         </div>
 
@@ -288,7 +288,7 @@ export default function Home() {
               zIndex: 2,
             }}
           >
-            ✦
+            &#10022;
           </span>
           <span
             style={{
@@ -330,7 +330,7 @@ export default function Home() {
               fontWeight: 500,
             }}
           >
-            Par où commencer ?
+            Par o&ugrave; commencer ?
           </div>
           <h2
             style={{
@@ -340,7 +340,7 @@ export default function Home() {
               letterSpacing: "-0.02em",
             }}
           >
-            Trois portes d&apos;entrée,{" "}
+            Trois portes d&apos;entr&eacute;e,{" "}
             <span style={{ color: "var(--canard)" }}>selon votre posture</span>
           </h2>
         </div>
@@ -357,22 +357,22 @@ export default function Home() {
           {[
             {
               num: "01",
-              title: "Vous êtes\nun·e professionnel·le",
-              desc: "Enseignant·e, conseiller·ère, éducateur·ice, formateur·ice. Accédez aux outils et ateliers pensés pour l'accompagnement structuré.",
+              title: "Vous \u00eates\nun\u00b7e professionnel\u00b7le",
+              desc: "Enseignant\u00b7e, conseiller\u00b7\u00e8re, \u00e9ducateur\u00b7ice, formateur\u00b7ice. Acc\u00e9dez aux outils et ateliers pens\u00e9s pour l\u2019accompagnement structur\u00e9.",
               cta: "Entrer",
               variant: "canard" as const,
             },
             {
               num: "02",
-              title: "Vous êtes\npair·e aidant·e",
-              desc: "Vous accompagnez vos pairs par l'expérience. Retrouvez les outils simples, éprouvés, pour faciliter la parole et l'action.",
+              title: "Vous \u00eates\npair\u00b7e aidant\u00b7e",
+              desc: "Vous accompagnez vos pairs par l\u2019exp\u00e9rience. Retrouvez les outils simples, \u00e9prouv\u00e9s, pour faciliter la parole et l\u2019action.",
               cta: "Entrer",
               variant: "jaune" as const,
             },
             {
               num: "03",
-              title: "Vous préférez\nexplorer librement",
-              desc: "Parcourez l'ensemble de la boîte sans filtre préalable. À vous de naviguer par étape, par objectif ou par clé d'engagement.",
+              title: "Vous pr\u00e9f\u00e9rez\nexplorer librement",
+              desc: "Parcourez l\u2019ensemble de la bo\u00eete sans filtre pr\u00e9alable. \u00c0 vous de naviguer par \u00e9tape, par objectif ou par cl\u00e9 d\u2019engagement.",
               cta: "Explorer",
               variant: "prune" as const,
             },
@@ -402,40 +402,29 @@ export default function Home() {
               <Link
                 key={card.num}
                 href="/bao"
-                className="fade-in"
+                className="fade-in landing-card"
                 style={{
                   background: "white",
                   padding: "36px 28px 28px",
                   cursor: "pointer",
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
                   display: "flex",
                   flexDirection: "column",
                   gap: "14px",
                   position: "relative",
                   overflow: "hidden",
-                  border: "2px solid var(--line)",
+                  border: `2px solid var(--line)`,
                   textAlign: "left",
                   minHeight: "240px",
                   borderRadius: "20px",
                   textDecoration: "none",
                   color: "inherit",
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget;
-                  el.style.transform = "translateY(-6px)";
-                  el.style.boxShadow =
-                    "0 12px 32px rgba(43, 52, 66, 0.12)";
-                  el.style.borderColor = colors.hoverBorder;
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget;
-                  el.style.transform = "translateY(0)";
-                  el.style.boxShadow = "none";
-                  el.style.borderColor = "var(--line)";
+                  // @ts-ignore
+                  "--hover-border": colors.hoverBorder,
                 }}
               >
                 {/* Bulle décorative */}
                 <div
+                  className="landing-bubble"
                   style={{
                     position: "absolute",
                     top: "-40px",
@@ -445,7 +434,6 @@ export default function Home() {
                     borderRadius: "50%",
                     opacity: card.variant === "jaune" ? 0.25 : 0.12,
                     background: colors.bubble,
-                    transition: "transform 0.4s ease",
                   }}
                 />
 
@@ -498,7 +486,7 @@ export default function Home() {
                     color: colors.cta,
                   }}
                 >
-                  {card.cta} <span>→</span>
+                  {card.cta} <span className="landing-arrow" style={{ display: "inline-block" }}>&rarr;</span>
                 </span>
               </Link>
             );
@@ -529,10 +517,10 @@ export default function Home() {
           }}
         >
           {[
-            { value: "30", label: "outils référencés" },
-            { value: "9", label: "clés d'engagement" },
-            { value: "10", label: "étapes de parcours" },
-            { value: "6", label: "parcours guidés" },
+            { value: "30", label: "outils r\u00e9f\u00e9renc\u00e9s" },
+            { value: "9", label: "cl\u00e9s d\u2019engagement" },
+            { value: "10", label: "\u00e9tapes de parcours" },
+            { value: "6", label: "parcours guid\u00e9s" },
           ].map((stat) => (
             <span key={stat.label}>
               <strong
@@ -556,10 +544,33 @@ export default function Home() {
             color: "var(--jaune)",
           }}
         >
-          Accès libre · gratuit · à partager
+          Acc&egrave;s libre &middot; gratuit &middot; &agrave; partager
         </div>
       </footer>
 
+      {/* ═══ CSS animations ═══ */}
+      <style>{`
+        .landing-card {
+          transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.3s ease;
+        }
+        .landing-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 40px rgba(43, 52, 66, 0.12);
+          border-color: var(--hover-border, var(--canard));
+        }
+        .landing-bubble {
+          transition: transform 0.5s ease;
+        }
+        .landing-card:hover .landing-bubble {
+          transform: scale(1.3);
+        }
+        .landing-arrow {
+          transition: transform 0.3s ease;
+        }
+        .landing-card:hover .landing-arrow {
+          transform: translateX(5px);
+        }
+      `}</style>
     </section>
   );
 }
