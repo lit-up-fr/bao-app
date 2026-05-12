@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllProfiles, updateProfileStatus, updateProfileRole, Profile } from "@/lib/auth";
+import { getAllProfiles, updateProfileStatus, updateProfileRole, deleteUserCompletely, Profile } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { getProfileByUserId } from "@/lib/auth";
 
@@ -75,6 +75,23 @@ export default function AdminUtilisateursPage() {
       }
     } catch (e) {
       console.error("Erreur mise à jour rôle:", e);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDelete(userId: string, userName: string) {
+    if (!confirm(`Supprimer définitivement ${userName} ? Cette action est irréversible (profil, favoris, consultations, retours seront supprimés).`)) return;
+    if (!confirm(`Confirmez-vous la suppression définitive de ${userName} ?`)) return;
+
+    setActionLoading(userId);
+    try {
+      await deleteUserCompletely(userId);
+      setProfiles((prev) => prev.filter((p) => p.id !== userId));
+      if (selectedProfile?.id === userId) setSelectedProfile(null);
+    } catch (e) {
+      console.error("Erreur suppression:", e);
+      alert("Erreur lors de la suppression. Vérifiez que vous avez les droits nécessaires.");
     } finally {
       setActionLoading(null);
     }
@@ -580,6 +597,30 @@ export default function AdminUtilisateursPage() {
                 </button>
               )}
             </div>
+
+            {/* Suppression (super_admin uniquement, pas sur soi-même) */}
+            {currentUserRole === "super_admin" && !selectedProfile.is_admin && (
+              <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #fecaca" }}>
+                <button
+                  onClick={() => handleDelete(selectedProfile.id, `${selectedProfile.prenom} ${selectedProfile.nom}`)}
+                  disabled={actionLoading === selectedProfile.id}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid #fecaca",
+                    background: "white",
+                    color: "#dc2626",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  🗑 Supprimer définitivement
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

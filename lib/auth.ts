@@ -191,6 +191,13 @@ export async function updateProfileRole(
   if (error) throw error;
 }
 
+export async function deleteUserCompletely(userId: string) {
+  const { error } = await supabase.rpc("delete_user_completely", {
+    target_user_id: userId,
+  });
+  if (error) throw error;
+}
+
 // === Favoris ===
 
 export async function getFavoris(userId: string): Promise<string[]> {
