@@ -1,8 +1,9 @@
 "use client";
 
 import type { Fiche, Cle, Etape } from "@/lib/supabase";
-import { formatDuree } from "@/lib/supabase";
+import { formatDuree, slugify } from "@/lib/supabase";
 import RetoursSection from "@/components/RetoursSection";
+import Link from "next/link";
 
 interface FicheModalProps {
   fiche: Fiche;
@@ -31,6 +32,8 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
   const deroule = parseJSON(fiche.deroule);
   const conseils = parseJSON(fiche.conseils);
   const variantes = parseJSON(fiche.variantes);
+  const illustrationsList: string[] = Array.isArray((fiche as any).illustrations) ? (fiche as any).illustrations : [];
+  const pdfsComp: { nom: string; url: string }[] = Array.isArray((fiche as any).pdfs_complementaires) ? (fiche as any).pdfs_complementaires : [];
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://odadaqpihvcnuprkdchr.supabase.co";
   const pdfUrl = fiche.pdf_url
@@ -69,30 +72,51 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
           borderRadius: "20px",
         }}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: "absolute",
-            top: "16px",
-            right: "16px",
-            background: "var(--blanc)",
-            border: "none",
-            fontSize: "22px",
-            cursor: "pointer",
-            color: "var(--anthracite)",
-            lineHeight: 1,
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            transition: "all 0.2s",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          ✕
-        </button>
+        {/* Close + Fullscreen buttons */}
+        <div style={{ position: "absolute", top: "16px", right: "16px", display: "flex", gap: "8px" }}>
+          <Link
+            href={`/bao/${fiche.slug || slugify(fiche.nom)}`}
+            style={{
+              background: "var(--blanc)",
+              border: "none",
+              fontSize: "16px",
+              cursor: "pointer",
+              color: "var(--anthracite)",
+              lineHeight: 1,
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none",
+            }}
+            title="Ouvrir en plein écran"
+          >
+            ⛶
+          </Link>
+          <button
+            onClick={onClose}
+            style={{
+              background: "var(--blanc)",
+              border: "none",
+              fontSize: "22px",
+              cursor: "pointer",
+              color: "var(--anthracite)",
+              lineHeight: 1,
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ✕
+          </button>
+        </div>
 
         {/* Step badge */}
         {etape && (
@@ -177,6 +201,29 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
             </div>
           )}
         </div>
+
+        {/* Illustrations carrousel */}
+        {illustrationsList.length > 0 && (
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "8px" }}>
+              {illustrationsList.map((url, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Illustration ${i + 1}`}
+                  style={{
+                    height: "200px",
+                    borderRadius: "12px",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                    border: "2px solid var(--line)",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Clés */}
         {cles.length > 0 && (
@@ -307,6 +354,21 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                       ))}
                     </ul>
                   )}
+                  {step.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={step.image_url}
+                      alt={`Illustration ${step.titre || `étape ${i + 1}`}`}
+                      style={{
+                        width: "100%",
+                        maxHeight: "300px",
+                        objectFit: "contain",
+                        borderRadius: "10px",
+                        marginTop: "14px",
+                        border: "1px solid var(--line)",
+                      }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -352,6 +414,42 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
             </div>
           )}
         </div>
+
+        {/* PDFs complémentaires */}
+        {pdfsComp.length > 0 && (
+          <div style={{ marginTop: "32px" }}>
+            <SectionHeading text="Ressources complémentaires" />
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {pdfsComp.map((pdf, i) => (
+                <a
+                  key={i}
+                  href={pdf.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "12px 16px",
+                    background: "var(--blanc)",
+                    borderRadius: "10px",
+                    textDecoration: "none",
+                    transition: "background 0.15s",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>📄</span>
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--anthracite)", flex: 1 }}>
+                    {pdf.nom || `Document ${i + 1}`}
+                  </span>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--canard)" }}>
+                    Télécharger ↓
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA buttons */}
         <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
