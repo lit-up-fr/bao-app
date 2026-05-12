@@ -260,9 +260,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                 <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px", color: "var(--canard-dark)" }}>
                   L&apos;intention
                 </div>
-                <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)", fontStyle: "italic" }}>
-                  {fiche.intention}
-                </div>
+                <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)", fontStyle: "italic" }} dangerouslySetInnerHTML={{ __html: fiche.intention }} />
               </div>
             </div>
           )}
@@ -275,9 +273,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                 <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px", color: "var(--jaune-accent)" }}>
                   Pourquoi cet outil fonctionne
                 </div>
-                <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)" }}>
-                  {fiche.pourquoi}
-                </div>
+                <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)" }} dangerouslySetInnerHTML={{ __html: fiche.pourquoi }} />
               </div>
             </div>
           )}
@@ -292,7 +288,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                   return (
                     <div key={i} style={{ padding: "11px 18px", borderBottom: i < materielListe.length - 1 ? "1px solid var(--line)" : "none", fontSize: "15px", display: "flex", gap: "10px", alignItems: "baseline", lineHeight: 1.45 }}>
                       <span style={{ color: "var(--canard)", fontWeight: 700, flexShrink: 0 }}>•</span>
-                      <span>{text}</span>
+                      <span dangerouslySetInnerHTML={{ __html: text }} />
                     </div>
                   );
                 })}
@@ -311,12 +307,10 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                   <div key={i} style={{ marginBottom: "14px" }}>
                     <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--canard-dark)", marginBottom: "4px", display: "flex", alignItems: "baseline", gap: "8px" }}>
                       <span style={{ color: "var(--canard)", fontWeight: 800 }}>→</span>
-                      <span>{title}</span>
+                      <span dangerouslySetInnerHTML={{ __html: title }} />
                     </div>
                     {detail && (
-                      <div style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, paddingLeft: "20px" }}>
-                        {detail}
-                      </div>
+                      <div style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, paddingLeft: "20px" }} dangerouslySetInnerHTML={{ __html: detail }} />
                     )}
                   </div>
                 );
@@ -385,7 +379,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                     return (
                       <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
                         <span style={{ position: "absolute", left: 0, fontWeight: 700, color: "var(--prune)" }}>→</span>
-                        {text}
+                        <span dangerouslySetInnerHTML={{ __html: text }} />
                       </li>
                     );
                   })}
@@ -405,7 +399,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                     return (
                       <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
                         <span style={{ position: "absolute", left: 0, fontWeight: 900, color: "var(--jaune-accent)", fontSize: "18px", lineHeight: 1, top: "4px" }}>·</span>
-                        {text}
+                        <span dangerouslySetInnerHTML={{ __html: text }} />
                       </li>
                     );
                   })}

@@ -175,7 +175,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           <div style={{ padding: "18px 20px 18px 28px", borderRadius: "12px", background: "#e0f3f4", position: "relative", marginBottom: "12px" }}>
             <div style={{ position: "absolute", left: 0, top: "8px", bottom: "8px", width: "4px", borderRadius: "2px", background: "var(--canard)" }} />
             <SectionLabel text="L'intention" color="var(--canard-dark)" />
-            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)", fontStyle: "italic" }}>{fiche.intention}</div>
+            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)", fontStyle: "italic" }} dangerouslySetInnerHTML={{ __html: fiche.intention }} />
           </div>
         )}
 
@@ -184,7 +184,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           <div style={{ padding: "18px 20px 18px 28px", borderRadius: "12px", background: "#fff7df", position: "relative", marginBottom: "32px" }}>
             <div style={{ position: "absolute", left: 0, top: "8px", bottom: "8px", width: "4px", borderRadius: "2px", background: "var(--jaune-dark)" }} />
             <SectionLabel text="Pourquoi cet outil fonctionne" color="var(--jaune-accent)" />
-            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)" }}>{fiche.pourquoi}</div>
+            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "var(--anthracite)" }} dangerouslySetInnerHTML={{ __html: fiche.pourquoi }} />
           </div>
         )}
 
@@ -198,7 +198,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                 return (
                   <div key={i} style={{ padding: "11px 18px", borderBottom: i < materielListe.length - 1 ? "1px solid var(--line)" : "none", fontSize: "15px", display: "flex", gap: "10px", alignItems: "baseline", lineHeight: 1.45 }}>
                     <span style={{ color: "var(--canard)", fontWeight: 700, flexShrink: 0 }}>*</span>
-                    <span>{text}</span>
+                    <span dangerouslySetInnerHTML={{ __html: text }} />
                   </div>
                 );
               })}
@@ -217,9 +217,9 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                 <div key={i} style={{ marginBottom: "14px" }}>
                   <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--canard-dark)", display: "flex", alignItems: "baseline", gap: "8px" }}>
                     <span style={{ color: "var(--canard)", fontWeight: 800 }}>-&gt;</span>
-                    <span>{title}</span>
+                    <span dangerouslySetInnerHTML={{ __html: title }} />
                   </div>
-                  {detail && <div style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, paddingLeft: "20px", marginTop: "4px" }}>{detail}</div>}
+                  {detail && <div style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, paddingLeft: "20px", marginTop: "4px" }} dangerouslySetInnerHTML={{ __html: detail }} />}
                 </div>
               );
             })}
@@ -287,7 +287,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                   return (
                     <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
                       <span style={{ position: "absolute", left: 0, fontWeight: 700, color: "var(--prune)" }}>-&gt;</span>
-                      {text}
+                      <span dangerouslySetInnerHTML={{ __html: text }} />
                     </li>
                   );
                 })}
@@ -307,7 +307,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                   return (
                     <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
                       <span style={{ position: "absolute", left: 0, fontWeight: 900, color: "var(--jaune-accent)", fontSize: "18px", lineHeight: 1, top: "4px" }}>.</span>
-                      {text}
+                      <span dangerouslySetInnerHTML={{ __html: text }} />
                     </li>
                   );
                 })}
