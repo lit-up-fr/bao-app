@@ -19,6 +19,7 @@ import AppHeader from "@/components/AppHeader";
 import Sidebar from "@/components/Sidebar";
 import FicheCard from "@/components/FicheCard";
 import FicheModal from "@/components/FicheModal";
+import WelcomeModal from "@/components/WelcomeModal";
 
 interface FicheWithMeta extends Fiche {
   fichesCles: Cle[];
@@ -44,8 +45,22 @@ export default function BaoPage() {
   const [parcoursCountMap, setParcoursCountMap] = useState<Record<string, number>>({});
 
   const [selectedFiche, setSelectedFiche] = useState<FicheWithMeta | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const { userId, favorisIds, updateFavori } = useCurrentUser();
+
+  // Afficher la modale de bienvenue à la première visite
+  useEffect(() => {
+    try {
+      const seen = sessionStorage.getItem("bao_welcome_seen");
+      if (!seen) setShowWelcome(true);
+    } catch {}
+  }, []);
+
+  function closeWelcome() {
+    setShowWelcome(false);
+    try { sessionStorage.setItem("bao_welcome_seen", "1"); } catch {}
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -174,7 +189,7 @@ export default function BaoPage() {
       `}</style>
 
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--blanc)" }}>
-        <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+        <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} onOpenGuide={() => setShowWelcome(true)} />
 
         {/* ═══ Parcours guidés ═══ */}
         {parcoursVisible && parcoursList.length > 0 && (
@@ -287,6 +302,10 @@ export default function BaoPage() {
 
         {selectedFiche && (
           <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} userId={userId} />
+        )}
+
+        {showWelcome && (
+          <WelcomeModal onClose={closeWelcome} />
         )}
       </div>
     </>

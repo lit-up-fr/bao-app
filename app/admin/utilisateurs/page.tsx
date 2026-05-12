@@ -50,6 +50,33 @@ export default function AdminUtilisateursPage() {
       if (selectedProfile?.id === userId) {
         setSelectedProfile((prev) => (prev ? { ...prev, status: newStatus } : null));
       }
+
+      // Envoyer l'email de bienvenue automatiquement quand on approuve
+      if (newStatus === "active") {
+        const user = profiles.find((p) => p.id === userId);
+        if (user && !user.is_admin) {
+          try {
+            const emailRes = await fetch(
+              "https://odadaqpihvcnuprkdchr.supabase.co/functions/v1/send-welcome-email",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: user.email, prenom: user.prenom }),
+              }
+            );
+            const emailData = await emailRes.json();
+            if (emailRes.ok) {
+              alert("Email de bienvenue envoy\u00e9 \u00e0 " + user.email + " !");
+            } else {
+              console.error("Erreur envoi email:", emailData);
+              alert("Utilisateur approuv\u00e9, mais l'email n'a pas pu \u00eatre envoy\u00e9. Vous pouvez le contacter manuellement.");
+            }
+          } catch (emailErr) {
+            console.error("Erreur envoi email:", emailErr);
+            alert("Utilisateur approuv\u00e9, mais l'email n'a pas pu \u00eatre envoy\u00e9.");
+          }
+        }
+      }
     } catch (e) {
       console.error("Erreur mise à jour statut:", e);
     } finally {

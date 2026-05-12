@@ -8,9 +8,10 @@ import { getProfileByUserId } from "@/lib/auth";
 interface AppHeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onOpenGuide?: () => void;
 }
 
-export default function AppHeader({ searchQuery, onSearchChange }: AppHeaderProps) {
+export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: AppHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -219,6 +220,25 @@ export default function AppHeader({ searchQuery, onSearchChange }: AppHeaderProp
 
           {/* Right nav (desktop) */}
           <nav className="app-header-nav-desktop" style={{ gap: "16px", fontSize: "14px", fontWeight: 600, alignItems: "center" }}>
+            {onOpenGuide && (
+              <button
+                onClick={onOpenGuide}
+                style={{
+                  background: "var(--blanc)",
+                  border: "2px solid var(--line-strong)",
+                  color: "var(--canard-dark)",
+                  padding: "5px 14px",
+                  borderRadius: "18px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Comprendre la BAO
+              </button>
+            )}
             <Link
               href="/bao"
               style={{ color: "var(--canard)", textDecoration: "none" }}

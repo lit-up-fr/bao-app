@@ -51,7 +51,7 @@ export default function ConnexionPage() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erreur de connexion";
       if (msg.includes("Invalid login")) {
-        setError("Email ou mot de passe incorrect");
+        setError("invalid_login");
       } else {
         setError(msg);
       }
@@ -129,7 +129,7 @@ export default function ConnexionPage() {
 
         {/* Form */}
         <div style={{ padding: "32px" }}>
-          {error && (
+          {error && error !== "invalid_login" && (
             <div
               style={{
                 background: "#fef2f2",
@@ -142,6 +142,40 @@ export default function ConnexionPage() {
               }}
             >
               {error}
+            </div>
+          )}
+
+          {error === "invalid_login" && (
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "12px",
+                padding: "16px 20px",
+                marginBottom: "20px",
+              }}
+            >
+              <div style={{ color: "#dc2626", fontSize: "14px", fontWeight: 600, marginBottom: "8px" }}>
+                Email ou mot de passe incorrect
+              </div>
+              <p style={{ color: "#6b7280", fontSize: "13px", margin: "0 0 12px 0", lineHeight: "1.5" }}>
+                Vérifiez vos identifiants. Si vous n'avez pas encore de compte, créez-en un pour accéder à la Boîte à Outils.
+              </p>
+              <Link
+                href="/inscription"
+                style={{
+                  display: "inline-block",
+                  padding: "8px 20px",
+                  borderRadius: "8px",
+                  background: "#00989D",
+                  color: "white",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
+              >
+                Créer un compte
+              </Link>
             </div>
           )}
 
