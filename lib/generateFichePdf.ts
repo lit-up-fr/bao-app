@@ -72,14 +72,15 @@ export async function generateFichePdf(fiche: any, cles?: { nom: string; emoji?:
   }).filter(Boolean).join("\n");
 
   const html = `
-    <div id="pdf-fiche" style="font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif; color: #2B3442; line-height: 1.5; max-width: 700px;">
+    <div id="pdf-fiche" style="font-family: 'Source Sans 3', 'Source Sans Pro', 'Segoe UI', Arial, sans-serif; color: #2B3442; line-height: 1.5; max-width: 700px;">
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap');
         .pdf-header {
           background: linear-gradient(135deg, #00989D 0%, #007479 100%);
           color: white;
           padding: 28px 30px 22px;
           border-radius: 0;
-          margin: -10px -10px 0;
+          margin: 0; margin-left: -10px; margin-right: -10px; margin-top: -10px;
         }
         .pdf-header h1 {
           font-size: 22px;
@@ -176,9 +177,7 @@ export async function generateFichePdf(fiche: any, cles?: { nom: string; emoji?:
           margin-bottom: 6px;
         }
         .step-num {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+          display: inline-block;
           width: 22px;
           height: 22px;
           border-radius: 50%;
@@ -186,6 +185,8 @@ export async function generateFichePdf(fiche: any, cles?: { nom: string; emoji?:
           color: white;
           font-size: 11px;
           font-weight: 800;
+          text-align: center;
+          line-height: 22px;
           flex-shrink: 0;
         }
         .step-title {
@@ -308,7 +309,7 @@ export async function generateFichePdf(fiche: any, cles?: { nom: string; emoji?:
 
   try {
     await html2pdf().set({
-      margin: [10, 10, 15, 10],
+      margin: [2, 10, 15, 10],
       filename: `${fileName}.pdf`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true },
