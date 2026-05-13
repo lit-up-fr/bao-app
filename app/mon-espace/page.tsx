@@ -20,9 +20,23 @@ interface AnalyseRow {
   nb_jeunes: number | null;
   type_eval: string | null;
   scores: Record<string, number>;
+  scores_detail: Record<string, Record<string, number>> | null;
   alertes: string[] | null;
   created_at: string;
 }
+
+const CLE_LABELS = ["Sens", "Liberté", "Plaisir", "Action", "Progression", "Utilité", "Sécurité", "Considération", "Confiance"];
+const CLE_COLORS: Record<string, string> = {
+  "Sens": "#00989D", "Liberté": "#6B2468", "Plaisir": "#FCC33E", "Action": "#e74c3c",
+  "Progression": "#3498db", "Utilité": "#2ecc71", "Sécurité": "#1abc9c",
+  "Considération": "#9b59b6", "Confiance": "#f39c12",
+};
+const COULEUR_HEX: Record<string, string> = {
+  rose: "#e91e63", jaune: "#FCC33E", bleu: "#2196f3", vert: "#4caf50",
+};
+const COULEUR_LABELS: Record<string, string> = {
+  rose: "Non", jaune: "Un peu", bleu: "Plutôt oui", vert: "Tout à fait",
+};
 
 function DashboardContent() {
   const router = useRouter();
@@ -31,6 +45,7 @@ function DashboardContent() {
   const [recents, setRecents] = useState<Fiche[]>([]);
   const [analyses, setAnalyses] = useState<AnalyseRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAnalyse, setSelectedAnalyse] = useState<AnalyseRow | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -46,11 +61,9 @@ function DashboardContent() {
 
         setProfile(prof);
 
-        // Fiches favorites
         const favFiches = allFiches.filter((f) => favIds.includes(f.id));
         setFavoris(favFiches);
 
-        // Dernières consultations
         const { data: consultData } = await supabase
           .from("consultations")
           .select("fiche_id, consulted_at")
@@ -73,7 +86,6 @@ function DashboardContent() {
           setRecents(recentFiches.slice(0, 6));
         }
 
-        // Analyses
         const { data: analysesData } = await supabase
           .from("analyses")
           .select("*")
@@ -247,6 +259,16 @@ function DashboardContent() {
 
                     {/* Actions */}
                     <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      <button
+                        onClick={() => setSelectedAnalyse(a)}
+                        style={{
+                          padding: "6px 12px", borderRadius: "8px", background: "#6B2468",
+                          color: "white", fontSize: "12px", fontWeight: 600, border: "none",
+                          cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                        }}
+                      >
+                        📊 Détails
+                      </button>
                       <Link
                         href={`/bao?mode=cles&alertes=${encodeURIComponent(alertes.join(","))}&atelier=${encodeURIComponent(a.nom_atelier || "")}`}
                         style={{
@@ -309,9 +331,257 @@ function DashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* Modale détails analyse */}
+      {selectedAnalyse && (
+        <AnalyseDetailModal
+          analyse={selectedAnalyse}
+          onClose={() => setSelectedAnalyse(null)}
+        />
+      )}
     </div>
   );
 }
+
+/* ═══ MODALE DÉTAILS ANALYSE ═══ */
+
+function AnalyseDetailModal({ analyse, onClose }: { analyse: AnalyseRow; onClose: () => void }) {
+  const scores = analyse.scores || {};
+  const detail = analyse.scores_detail || {};
+  const alertes = analyse.alertes || [];
+  const scoreEntries = CLE_LABELS.map((k) => [k, scores[k] || 0] as [string, number]);
+  const avgScore = scoreEntries.length > 0
+    ? Math.round(scoreEntries.reduce((sum, [, s]) => sum + s, 0) / scoreEntries.length)
+    : 0;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "20px", overflowY: "auto",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "white", borderRadius: "16px", maxWidth: "720px", width: "100%",
+          maxHeight: "90vh", overflowY: "auto", padding: "32px", position: "relative",
+        }}
+      >
+        {/* Bouton fermer */}
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute", top: "16px", right: "16px", width: "32px", height: "32px",
+            borderRadius: "50%", background: "#f3f4f6", border: "none", fontSize: "16px",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#6b7280",
+          }}
+        >
+          ✕
+        </button>
+
+        {/* Titre */}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#2B3442", marginBottom: "4px", paddingRight: "40px" }}>
+          {analyse.nom_atelier || "Analyse sans nom"}
+        </h2>
+        <div style={{ fontSize: "13px", color: "#6b7280", marginBottom: "24px", display: "flex", gap: "16px", flexWrap: "wrap" }}>
+          {analyse.date_atelier && <span>📅 {new Date(analyse.date_atelier).toLocaleDateString("fr-FR")}</span>}
+          {analyse.nb_jeunes && <span>👥 {analyse.nb_jeunes} jeunes</span>}
+          {analyse.type_eval && <span>📋 {analyse.type_eval}</span>}
+          <span style={{ fontWeight: 700, color: avgScore >= 60 ? "#16a34a" : avgScore >= 40 ? "#ca8a04" : "#dc2626" }}>
+            Score moyen : {avgScore}%
+          </span>
+        </div>
+
+        {/* Alertes */}
+        {alertes.length > 0 && (
+          <div style={{
+            background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "10px",
+            padding: "12px 16px", marginBottom: "24px", fontSize: "13px", color: "#ea580c",
+          }}>
+            ⚠️ Clés à renforcer : <strong>{alertes.join(", ")}</strong>
+          </div>
+        )}
+
+        {/* Radar SVG */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
+          <RadarChart scores={scores} />
+        </div>
+
+        {/* Barres de progression */}
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "16px" }}>
+          Scores par clé
+        </h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+          {scoreEntries.map(([cle, score]) => {
+            const isAlerte = alertes.includes(cle);
+            return (
+              <div key={cle}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: isAlerte ? "#ea580c" : "#2B3442" }}>
+                    {isAlerte ? "⚠️ " : ""}{cle}
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: score >= 60 ? "#16a34a" : score >= 40 ? "#ca8a04" : "#dc2626" }}>
+                    {score}%
+                  </span>
+                </div>
+                <div style={{ height: "8px", borderRadius: "4px", background: "#f3f4f6", overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", borderRadius: "4px", transition: "width 0.5s ease",
+                    width: `${score}%`,
+                    background: score >= 60 ? "#4caf50" : score >= 40 ? "#FCC33E" : "#e74c3c",
+                  }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Détail par couleur */}
+        {Object.keys(detail).length > 0 && (
+          <>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "16px" }}>
+              Répartition des réponses par clé
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px" }}>
+              {CLE_LABELS.map((cle) => {
+                const d = detail[cle];
+                if (!d) return null;
+                const total = (d.rose || 0) + (d.jaune || 0) + (d.bleu || 0) + (d.vert || 0);
+                if (total === 0) return null;
+                return (
+                  <div key={cle} style={{
+                    background: "#f9fafb", borderRadius: "10px", padding: "12px",
+                    border: "1px solid #e5e7eb",
+                  }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#2B3442", marginBottom: "8px" }}>
+                      {cle}
+                    </div>
+                    {/* Barre empilée */}
+                    <div style={{ display: "flex", height: "12px", borderRadius: "6px", overflow: "hidden", marginBottom: "6px" }}>
+                      {(["rose", "jaune", "bleu", "vert"] as const).map((couleur) => {
+                        const val = d[couleur] || 0;
+                        if (val === 0) return null;
+                        return (
+                          <div
+                            key={couleur}
+                            style={{
+                              width: `${(val / total) * 100}%`,
+                              background: COULEUR_HEX[couleur],
+                              minWidth: val > 0 ? "4px" : 0,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                    {/* Légende chiffres */}
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {(["rose", "jaune", "bleu", "vert"] as const).map((couleur) => (
+                        <span key={couleur} style={{ fontSize: "11px", color: "#6b7280", display: "flex", alignItems: "center", gap: "3px" }}>
+                          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: COULEUR_HEX[couleur], display: "inline-block" }} />
+                          {d[couleur] || 0}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Légende couleurs */}
+        <div style={{ marginTop: "20px", padding: "12px 16px", background: "#f9fafb", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            Légende
+          </div>
+          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "12px", color: "#4b5563" }}>
+            {(["rose", "jaune", "bleu", "vert"] as const).map((c) => (
+              <span key={c} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: COULEUR_HEX[c] }} />
+                {COULEUR_LABELS[c]}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ RADAR SVG ═══ */
+
+function RadarChart({ scores }: { scores: Record<string, number> }) {
+  const size = 300;
+  const center = size / 2;
+  const radius = 120;
+  const labels = CLE_LABELS;
+  const n = labels.length;
+
+  function polarToCart(angle: number, r: number): [number, number] {
+    const a = (angle - 90) * (Math.PI / 180);
+    return [center + r * Math.cos(a), center + r * Math.sin(a)];
+  }
+
+  const angleStep = 360 / n;
+
+  // Grille
+  const gridLevels = [0.25, 0.5, 0.75, 1];
+  const gridPaths = gridLevels.map((level) => {
+    const points = labels.map((_, i) => polarToCart(i * angleStep, radius * level));
+    return points.map((p) => p.join(",")).join(" ");
+  });
+
+  // Données
+  const dataPoints = labels.map((label, i) => {
+    const val = (scores[label] || 0) / 100;
+    return polarToCart(i * angleStep, radius * val);
+  });
+  const dataPath = dataPoints.map((p) => p.join(",")).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ maxWidth: "100%" }}>
+      {/* Grille */}
+      {gridPaths.map((points, i) => (
+        <polygon key={i} points={points} fill="none" stroke="#e5e7eb" strokeWidth="1" />
+      ))}
+      {/* Axes */}
+      {labels.map((_, i) => {
+        const [x, y] = polarToCart(i * angleStep, radius);
+        return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#e5e7eb" strokeWidth="1" />;
+      })}
+      {/* Données */}
+      <polygon points={dataPath} fill="rgba(0,152,157,0.2)" stroke="#00989D" strokeWidth="2" />
+      {dataPoints.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="4" fill="#00989D" />
+      ))}
+      {/* Labels */}
+      {labels.map((label, i) => {
+        const [x, y] = polarToCart(i * angleStep, radius + 24);
+        const score = scores[label] || 0;
+        return (
+          <text
+            key={i}
+            x={x}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize="10"
+            fontWeight="600"
+            fill={score < 40 ? "#dc2626" : "#2B3442"}
+          >
+            {label}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ═══ SOUS-COMPOSANTS ═══ */
 
 function StatCard({ value, label, color, icon }: { value: number; label: string; color: string; icon: string }) {
   return (
