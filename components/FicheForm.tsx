@@ -148,21 +148,21 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
     try { return JSON.parse(val); } catch { return null; }
   }
 
-  /* ── Serializers ── */
+  /* ── Serializers (return [] instead of null to respect NOT NULL constraints) ── */
   function serializeObjectifs(): any {
     const filtered = objectifs.filter((o) => o.titre.trim());
-    if (filtered.length === 0) return null;
+    if (filtered.length === 0) return [];
     return filtered.map((o) => o.detail.trim() ? { titre: o.titre, detail: o.detail } : o.titre);
   }
 
   function serializeStringList(list: string[]): any {
     const filtered = list.filter((s) => s.trim());
-    return filtered.length > 0 ? filtered : null;
+    return filtered.length > 0 ? filtered : [];
   }
 
   function serializeDeroule(): any {
     const filtered = deroule.filter((s) => s.titre.trim());
-    if (filtered.length === 0) return null;
+    if (filtered.length === 0) return [];
     return filtered.map((s, i) => ({
       etape: i + 1,
       titre: s.titre,
