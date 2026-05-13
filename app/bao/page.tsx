@@ -294,7 +294,7 @@ export default function BaoPage() {
                 {viewMode === "objectifs" ? (
                   <>
                     <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--anthracite)" }}>Mes objectifs</span>
-                    <em style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--jaune-accent)", fontStyle: "italic" }}>— que souhaitez-vous accomplir ?</em>
+                    <em style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--jaune-accent)", fontStyle: "italic" }}>— que souhaitez-vous faire ?</em>
                   </>
                 ) : (
                   <>
