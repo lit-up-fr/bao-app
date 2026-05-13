@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok) { console.error("API Anthropic erreur:", response.status, JSON.stringify(data));
       return NextResponse.json({ error: data.error?.message || "Erreur API" }, { status: response.status });
     }
 

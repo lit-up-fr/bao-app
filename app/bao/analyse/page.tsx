@@ -308,20 +308,49 @@ export default function AnalysePage() {
     reader.readAsDataURL(file);
   }, []);
 
+  function compressImage(dataUrl: string, maxSizeMB: number = 4): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        const maxDim = 2048;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        let quality = 0.85;
+        let result = canvas.toDataURL("image/jpeg", quality);
+        while (result.length * 0.75 > maxSizeMB * 1024 * 1024 && quality > 0.3) {
+          quality -= 0.1;
+          result = canvas.toDataURL("image/jpeg", quality);
+        }
+        resolve(result);
+      };
+      img.src = dataUrl;
+    });
+  }
+
   async function handlePhotoAnalyze() {
     if (!imageFile || !imagePreview) return;
     setAnalyzing(true);
     setAiError("");
 
     try {
-      const base64 = imagePreview.split(",")[1];
-      const mediaType = imageFile.type || "image/jpeg";
+      const compressed = await compressImage(imagePreview);
+      const base64 = compressed.split(",")[1];
+      const mediaType = "image/jpeg";
 
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 1000,
           messages: [{
             role: "user",
