@@ -63,7 +63,7 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
             gap: "12px",
           }}
         >
-          {/* Left: logo + back + badge (desktop) */}
+          {/* Left: logo + back (desktop) */}
           <div className="app-header-desktop-left" style={{ alignItems: "center", gap: "18px" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -89,19 +89,6 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
             >
               ← Accueil
             </Link>
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                padding: "5px 12px",
-                borderRadius: "12px",
-                background: "var(--canard-light)",
-                color: "var(--canard-dark)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Tous publics
-            </span>
           </div>
 
           {/* Mobile: logo only */}
@@ -117,6 +104,20 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
 
             {/* Mobile nav links */}
             <div style={{ display: "flex", gap: "12px", marginLeft: "auto", alignItems: "center" }}>
+              <Link
+                href="/proposer"
+                style={{
+                  color: "var(--canard-dark)",
+                  textDecoration: "none",
+                  background: "var(--canard-light)",
+                  padding: "4px 10px",
+                  borderRadius: "14px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                }}
+              >
+                +
+              </Link>
               <Link
                 href="/mon-espace"
                 style={{
@@ -207,7 +208,7 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
           </div>
 
           {/* Right nav (desktop) */}
-          <nav className="app-header-nav-desktop" style={{ gap: "16px", fontSize: "14px", fontWeight: 600, alignItems: "center" }}>
+          <nav className="app-header-nav-desktop" style={{ gap: "12px", fontSize: "14px", fontWeight: 600, alignItems: "center" }}>
             {onOpenGuide && (
               <button
                 onClick={onOpenGuide}
@@ -229,9 +230,21 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
             )}
             <Link
               href="/proposer"
-              style={{ color: "var(--anthracite)", textDecoration: "none" }}
+              style={{
+                color: "var(--canard-dark)",
+                textDecoration: "none",
+                background: "var(--canard-light)",
+                padding: "6px 14px",
+                borderRadius: "18px",
+                fontSize: "13px",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                whiteSpace: "nowrap",
+              }}
             >
-              Proposer
+              + Proposer un outil
             </Link>
             <Link
               href="/mon-espace"
