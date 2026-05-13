@@ -24,6 +24,8 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
   const [etapes, setEtapes] = useState<Etape[]>([]);
   const [allCles, setAllCles] = useState<Cle[]>([]);
   const [selectedCles, setSelectedCles] = useState<string[]>([]);
+  const [allObjectifs, setAllObjectifs] = useState<{id: string; nom: string; emoji: string | null; ordre: number}[]>([]);
+  const [selectedObjectifs, setSelectedObjectifs] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -59,12 +61,14 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
 
   useEffect(() => {
     async function loadData() {
-      const [{ data: etapesData }, { data: clesData }] = await Promise.all([
+      const [{ data: etapesData }, { data: clesData }, { data: objectifsData }] = await Promise.all([
         supabase.from("etapes_parcours").select("*").order("ordre"),
         supabase.from("cles").select("*").order("ordre"),
+        supabase.from("objectifs").select("id, nom, emoji, ordre").order("ordre"),
       ]);
       setEtapes(etapesData || []);
       setAllCles(clesData || []);
+      setAllObjectifs(objectifsData || []);
 
       if (ficheId) {
         const { data: fiche } = await supabase.from("fiches").select("*").eq("id", ficheId).single();
@@ -100,6 +104,9 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
 
         const { data: ficheCles } = await supabase.from("fiches_cles").select("cle_id").eq("fiche_id", ficheId);
         if (ficheCles) setSelectedCles(ficheCles.map((fc: any) => fc.cle_id));
+
+        const { data: ficheObjectifs } = await supabase.from("objectifs_fiches").select("objectif_id").eq("fiche_id", ficheId);
+        if (ficheObjectifs) setSelectedObjectifs(ficheObjectifs.map((fo: any) => fo.objectif_id));
       }
     }
     loadData();
@@ -222,7 +229,7 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
     const url = await uploadPdf(file);
     if (url) {
       setPdfsComplementaires((prev) => [...prev, { nom: file.name.replace(".pdf", ""), url }]);
-      setSuccess("PDF ajout\u00e9");
+      setSuccess("PDF ajouté");
       setTimeout(() => setSuccess(""), 3000);
     }
     setUploading(false);
@@ -241,7 +248,7 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
     if (uploadError) { setError("Erreur upload PDF : " + uploadError.message); setUploading(false); return; }
     setPdfUrl(`/pdfs/${fileName}`);
     setUploading(false);
-    setSuccess("PDF principal upload\u00e9.");
+    setSuccess("PDF principal uploadé.");
     setTimeout(() => setSuccess(""), 3000);
   }
 
@@ -281,11 +288,22 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
       savedId = data.id;
     }
 
+    // Sync clés associations
     if (savedId) {
       await supabase.from("fiches_cles").delete().eq("fiche_id", savedId);
       if (selectedCles.length > 0) {
         await supabase.from("fiches_cles").insert(
           selectedCles.map((cleId, i) => ({ fiche_id: savedId, cle_id: cleId, ordre: i + 1 }))
+        );
+      }
+    }
+
+    // Sync objectifs associations
+    if (savedId) {
+      await supabase.from("objectifs_fiches").delete().eq("fiche_id", savedId);
+      if (selectedObjectifs.length > 0) {
+        await supabase.from("objectifs_fiches").insert(
+          selectedObjectifs.map((objId, i) => ({ fiche_id: savedId, objectif_id: objId, ordre: i + 1 }))
         );
       }
     }
@@ -393,6 +411,43 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
           <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { if (e.target.files) handleIllustrationUpload(e.target.files); }} />
         </label>
 
+        {/* ═══ Objectifs BAO (catégories) ═══ */}
+        <SectionTitle text="Objectifs BAO (catégories)" />
+        <p style={{ fontSize: "13px", color: "var(--muted)", marginTop: "-8px", marginBottom: "8px" }}>
+          Dans quelle(s) catégorie(s) cette fiche apparaît-elle sur la BAO ?
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {allObjectifs.map((obj) => {
+            const selected = selectedObjectifs.includes(obj.id);
+            return (
+              <button
+                key={obj.id}
+                type="button"
+                onClick={() => setSelectedObjectifs((prev) => prev.includes(obj.id) ? prev.filter((id) => id !== obj.id) : [...prev, obj.id])}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  padding: "8px 12px", background: selected ? "#e0f7f7" : "white",
+                  border: `1.5px solid ${selected ? "var(--canard)" : "var(--line)"}`,
+                  borderRadius: "10px", cursor: "pointer", fontFamily: "inherit",
+                  textAlign: "left", fontSize: "13px", color: "var(--anthracite)", transition: "all 0.15s",
+                }}
+              >
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "4px", flexShrink: 0,
+                  border: selected ? "none" : "2px solid var(--line-strong)",
+                  background: selected ? "var(--canard)" : "white",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "white", fontSize: "11px", fontWeight: 700,
+                }}>
+                  {selected ? "✓" : ""}
+                </span>
+                <span style={{ fontSize: "18px" }}>{obj.emoji || "📋"}</span>
+                <span style={{ fontWeight: 600 }}>{obj.nom}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* ═══ Contenu pedagogique ═══ */}
         <SectionTitle text="Contenu pedagogique" />
         <Field label="Intention">
@@ -402,7 +457,7 @@ export default function FicheForm({ ficheId }: FicheFormProps) {
           <RichTextEditor value={pourquoi} onChange={setPourquoi} placeholder="Explication pedagogique..." rows={3} />
         </Field>
 
-        {/* ═══ Objectifs ═══ */}
+        {/* ═══ Objectifs pédagogiques ═══ */}
         <SectionTitle text="Objectifs pedagogiques" />
         {objectifs.map((obj, i) => (
           <div key={i} style={{ background: "white", border: "2px solid var(--line)", borderRadius: "12px", padding: "14px", position: "relative" }}>

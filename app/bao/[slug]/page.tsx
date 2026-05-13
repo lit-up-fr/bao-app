@@ -6,10 +6,12 @@ import {
   getFicheBySlug,
   getClesByFiche,
   getEtapeById,
+  getObjectifsByFiche,
   formatDuree,
   type Fiche,
   type Cle,
   type Etape,
+  type Objectif,
 } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase";
 import { getProfileByUserId } from "@/lib/auth";
@@ -26,6 +28,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
   const [fiche, setFiche] = useState<Fiche | null>(null);
   const [cles, setCles] = useState<Cle[]>([]);
   const [etape, setEtape] = useState<Etape | null>(null);
+  const [objectifsBao, setObjectifsBao] = useState<Objectif[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
@@ -36,14 +39,15 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
       const f = await getFicheBySlug(params.slug);
       if (f) {
         setFiche(f);
-        const [c, e] = await Promise.all([
+        const [c, e, obj] = await Promise.all([
           getClesByFiche(f.id),
           f.etape_id ? getEtapeById(f.etape_id) : Promise.resolve(null),
+          getObjectifsByFiche(f.id),
         ]);
         setCles(c);
         setEtape(e);
+        setObjectifsBao(obj);
       }
-      // Get current user
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
@@ -60,7 +64,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
       <div style={{ minHeight: "100vh", background: "var(--blanc)" }}>
         <AppHeader searchQuery="" onSearchChange={() => {}} />
         <div style={{ maxWidth: "760px", margin: "0 auto", padding: "80px 28px", textAlign: "center", color: "var(--muted)" }}>
-          Chargement...
+          Chargement…
         </div>
       </div>
     );
@@ -99,28 +103,21 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
     <div style={{ minHeight: "100vh", background: "var(--blanc)" }}>
       <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 28px 80px" }}>
+      <div className="fiche-content" style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 28px 80px" }}>
         {/* Back link + Edit button */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
           <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            Retour aux outils
+            ← Retour aux outils
           </Link>
           {isAdmin && (
             <Link
               href={`/admin/fiches/${fiche.id}/edit`}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 14px",
-                borderRadius: "8px",
-                border: "1.5px solid var(--canard)",
-                background: "white",
-                color: "var(--canard)",
-                fontSize: "13px",
-                fontWeight: 600,
-                textDecoration: "none",
-                fontFamily: "inherit",
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "6px 14px", borderRadius: "8px",
+                border: "1.5px solid var(--canard)", background: "white",
+                color: "var(--canard)", fontSize: "13px", fontWeight: 600,
+                textDecoration: "none", fontFamily: "inherit",
               }}
             >
               ✏️ Modifier
@@ -138,19 +135,6 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </h1>
         </div>
 
-        {/* Step badge (small, outline) */}
-        {etape && (
-          <div style={{ marginBottom: "16px" }}>
-            <span style={{
-              display: "inline-block", fontSize: "10px", fontWeight: 700,
-              letterSpacing: "0.03em", padding: "3px 10px", borderRadius: "8px",
-              color: stepColor, border: `1.5px solid ${stepColor}`, background: "white",
-              textTransform: "uppercase",
-            }}>
-              {etape.code} - {etape.nom}
-            </span>
-          </div>
-        )}
 
         {/* Illustrations carrousel */}
         {illustrationsList.length > 0 && (
@@ -162,13 +146,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                   key={i}
                   src={url}
                   alt={`Illustration ${i + 1}`}
-                  style={{
-                    height: "220px",
-                    borderRadius: "12px",
-                    objectFit: "cover",
-                    flexShrink: 0,
-                    border: "2px solid var(--line)",
-                  }}
+                  style={{ height: "220px", borderRadius: "12px", objectFit: "cover", flexShrink: 0, border: "2px solid var(--line)" }}
                 />
               ))}
             </div>
@@ -177,18 +155,40 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
 
         {/* Metadata grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px 24px", margin: "20px 0 24px", padding: "20px 24px", background: "white", borderRadius: "14px", border: "2px solid var(--line)" }}>
-          {duree && <MetaItem label="Duree" value={duree} />}
+          {duree && <MetaItem label="Durée" value={duree} />}
           {fiche.format && <MetaItem label="Format" value={fiche.format} />}
-          {fiche.materiel && <MetaItem label="Materiel" value={fiche.materiel} />}
+          {fiche.materiel && <MetaItem label="Matériel" value={fiche.materiel} />}
           {fiche.participants && <MetaItem label="Participants" value={fiche.participants} />}
           {fiche.pour_qui && <MetaItem label="Pour qui" value={fiche.pour_qui} />}
           {fiche.source && <MetaItem label="Source" value={fiche.source} />}
         </div>
 
-        {/* Cles */}
+        {/* Objectifs BAO */}
+        {objectifsBao.length > 0 && (
+          <div style={{ marginBottom: "24px" }}>
+            <SectionLabel text="Objectifs" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {objectifsBao.map((obj) => (
+                <span
+                  key={obj.id}
+                  style={{
+                    fontSize: "12px", padding: "4px 10px", borderRadius: "10px",
+                    color: "var(--canard-dark)", fontWeight: 600, background: "#e0f3f4",
+                    border: "1px solid var(--canard)", display: "inline-flex",
+                    alignItems: "center", gap: "4px",
+                  }}
+                >
+                  <span>{obj.emoji}</span> {obj.mot_cle || obj.nom}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Clés d'engagement */}
         {cles.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
-            <SectionLabel text="Cles d'engagement" />
+            <SectionLabel text="Clés d'engagement" />
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {cles.map((cle) => (
                 <span key={cle.id} style={{ fontSize: "11px", padding: "4px 10px", borderRadius: "10px", color: "white", fontWeight: 600, background: cle.couleur_hex || "var(--canard)" }}>
@@ -217,16 +217,16 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </div>
         )}
 
-        {/* Materiel liste */}
+        {/* Matériel liste */}
         {materielListe && Array.isArray(materielListe) && materielListe.length > 0 && (
           <div style={{ marginBottom: "32px" }}>
             <SectionHeading text="Ce dont vous avez besoin" />
             <div style={{ background: "white", borderRadius: "12px", border: "2px solid var(--line)", padding: "4px 0" }}>
               {materielListe.map((item: any, i: number) => {
-                const text = typeof item === "string" ? item : item.item || item.titre || Object.values(item).join(" - ");
+                const text = typeof item === "string" ? item : item.item || item.titre || Object.values(item).join(" – ");
                 return (
                   <div key={i} style={{ padding: "11px 18px", borderBottom: i < materielListe.length - 1 ? "1px solid var(--line)" : "none", fontSize: "15px", display: "flex", gap: "10px", alignItems: "baseline", lineHeight: 1.45 }}>
-                    <span style={{ color: "var(--canard)", fontWeight: 700, flexShrink: 0 }}>*</span>
+                    <span style={{ color: "var(--canard)", fontWeight: 700, flexShrink: 0 }}>•</span>
                     <span dangerouslySetInnerHTML={{ __html: text }} />
                   </div>
                 );
@@ -235,17 +235,17 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </div>
         )}
 
-        {/* Objectifs */}
+        {/* Objectifs pédagogiques */}
         {objectifs && Array.isArray(objectifs) && objectifs.length > 0 && (
           <div style={{ marginBottom: "32px" }}>
-            <SectionHeading text="Objectifs pedagogiques" />
+            <SectionHeading text="Objectifs pédagogiques" />
             {objectifs.map((obj: any, i: number) => {
               const title = typeof obj === "string" ? obj : obj.titre || obj.title || obj.objectif;
-              const detail = typeof obj === "object" ? (obj.detail || obj.description) : null;
+              const detail = typeof obj === "object" ? (obj.détail || obj.detail || obj.description) : null;
               return (
                 <div key={i} style={{ marginBottom: "14px" }}>
                   <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--canard-dark)", display: "flex", alignItems: "baseline", gap: "8px" }}>
-                    <span style={{ color: "var(--canard)", fontWeight: 800 }}>-&gt;</span>
+                    <span style={{ color: "var(--canard)", fontWeight: 800 }}>→</span>
                     <span dangerouslySetInnerHTML={{ __html: title }} />
                   </div>
                   {detail && <div style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, paddingLeft: "20px", marginTop: "4px" }} dangerouslySetInnerHTML={{ __html: detail }} />}
@@ -255,23 +255,23 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </div>
         )}
 
-        {/* Deroule */}
+        {/* Déroulé */}
         {deroule && Array.isArray(deroule) && deroule.length > 0 && (
           <div style={{ marginBottom: "32px" }}>
-            <SectionHeading text="Le deroule, etape par etape" />
+            <SectionHeading text="Le déroulé, étape par étape" />
             {deroule.map((step: any, i: number) => (
               <div key={i} style={{ background: "white", borderRadius: "12px", border: "2px solid var(--line)", padding: "18px 22px 18px 24px", marginBottom: "14px", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", left: 0, top: "12px", bottom: "12px", width: "5px", background: stepColor, borderRadius: "2px" }} />
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px", paddingBottom: "12px", borderBottom: "1px solid var(--line)" }}>
                   <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: stepColor, color: "white", fontWeight: 800, fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {step.etape || i + 1}
+                    {step.étape || step.etape || i + 1}
                   </span>
                   <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--anthracite)", flexGrow: 1 }}>
-                    {step.titre || step.title || `Etape ${i + 1}`}
+                    {step.titre || step.title || `Étape ${i + 1}`}
                   </span>
-                  {(step.duree) && (
+                  {(step.durée || step.duree) && (
                     <span style={{ fontSize: "12px", fontWeight: 700, background: stepColor, color: "white", padding: "4px 10px", borderRadius: "10px", whiteSpace: "nowrap" }}>
-                      {step.duree}
+                      {step.durée || step.duree}
                     </span>
                   )}
                 </div>
@@ -289,15 +289,8 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={step.image_url}
-                    alt={`Illustration ${step.titre || `etape ${i + 1}`}`}
-                    style={{
-                      width: "100%",
-                      maxHeight: "350px",
-                      objectFit: "contain",
-                      borderRadius: "10px",
-                      marginTop: "14px",
-                      border: "1px solid var(--line)",
-                    }}
+                    alt={`Illustration ${step.titre || `étape ${i + 1}`}`}
+                    style={{ width: "100%", maxHeight: "350px", objectFit: "contain", borderRadius: "10px", marginTop: "14px", border: "1px solid var(--line)" }}
                   />
                 )}
               </div>
@@ -312,10 +305,10 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
             <div style={{ padding: "16px 20px", borderRadius: "12px", background: "#f5e9f3", borderLeft: "4px solid var(--prune)" }}>
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {conseils.map((c: any, i: number) => {
-                  const text = typeof c === "string" ? c : c.conseil || c.titre || c.text || Object.values(c).join(" - ");
+                  const text = typeof c === "string" ? c : c.conseil || c.titre || c.text || Object.values(c).join(" – ");
                   return (
                     <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
-                      <span style={{ position: "absolute", left: 0, fontWeight: 700, color: "var(--prune)" }}>-&gt;</span>
+                      <span style={{ position: "absolute", left: 0, fontWeight: 700, color: "var(--prune)" }}>→</span>
                       <span dangerouslySetInnerHTML={{ __html: text }} />
                     </li>
                   );
@@ -332,10 +325,10 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
             <div style={{ padding: "16px 20px", borderRadius: "12px", background: "#fff7df", borderLeft: "4px solid var(--jaune-accent)" }}>
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {variantes.map((v: any, i: number) => {
-                  const text = typeof v === "string" ? v : v.variante || v.titre || v.text || Object.values(v).join(" - ");
+                  const text = typeof v === "string" ? v : v.variante || v.titre || v.text || Object.values(v).join(" – ");
                   return (
                     <li key={i} style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, padding: "4px 0 4px 20px", position: "relative" }}>
-                      <span style={{ position: "absolute", left: 0, fontWeight: 900, color: "var(--jaune-accent)", fontSize: "18px", lineHeight: 1, top: "4px" }}>.</span>
+                      <span style={{ position: "absolute", left: 0, fontWeight: 900, color: "var(--jaune-accent)", fontSize: "18px", lineHeight: 1, top: "4px" }}>·</span>
                       <span dangerouslySetInnerHTML={{ __html: text }} />
                     </li>
                   );
@@ -345,10 +338,10 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </div>
         )}
 
-        {/* PDFs complementaires */}
+        {/* Ressources complémentaires */}
         {pdfsComp.length > 0 && (
           <div style={{ marginBottom: "32px" }}>
-            <SectionHeading text="Ressources complementaires" />
+            <SectionHeading text="Ressources complémentaires" />
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {pdfsComp.map((pdf, i) => (
                 <a
@@ -357,23 +350,17 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "12px 16px",
-                    background: "white",
-                    borderRadius: "10px",
-                    textDecoration: "none",
-                    border: "2px solid var(--line)",
-                    transition: "border-color 0.15s",
+                    display: "flex", alignItems: "center", gap: "12px",
+                    padding: "12px 16px", background: "white", borderRadius: "10px",
+                    textDecoration: "none", border: "2px solid var(--line)", transition: "border-color 0.15s",
                   }}
                 >
-                  <span style={{ fontSize: "20px" }}>PDF</span>
+                  <span style={{ fontSize: "20px" }}>📄</span>
                   <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--anthracite)", flex: 1 }}>
                     {pdf.nom || `Document ${i + 1}`}
                   </span>
                   <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--canard)" }}>
-                    Telecharger
+                    Télécharger ↓
                   </span>
                 </a>
               ))}
@@ -390,7 +377,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
               transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: "8px",
               letterSpacing: "0.02em", textDecoration: "none",
             }}>
-              Telecharger la fiche PDF
+              ↓ Télécharger la fiche PDF
             </a>
           </div>
         )}
@@ -402,7 +389,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </div>
         )}
 
-        {/* Retours d'experience */}
+        {/* Retours d'expérience */}
         <RetoursSection
           ficheId={fiche.id}
           userId={userId}

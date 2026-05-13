@@ -21,18 +21,20 @@ interface NavItem {
   href: string;
   label: string;
   icon: string;
-  roles: AdminRole[]; // rôles autorisés
+  roles: AdminRole[];
+  deprecated?: boolean;
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "Tableau de bord", icon: "📊", roles: ["super_admin", "editor", "moderator", "analyst"] },
   { href: "/admin/fiches", label: "Fiches", icon: "📝", roles: ["super_admin", "editor"] },
-  { href: "/admin/parcours", label: "Parcours", icon: "🗺", roles: ["super_admin", "editor"] },
+  { href: "/admin/objectifs", label: "Objectifs", icon: "🎯", roles: ["super_admin", "editor"] },
   { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑", roles: ["super_admin", "editor"] },
-  { href: "/admin/etapes", label: "Étapes", icon: "📍", roles: ["super_admin", "editor"] },
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥", roles: ["super_admin", "moderator"] },
   { href: "/admin/propositions", label: "Propositions", icon: "💡", roles: ["super_admin", "editor"] },
   { href: "/admin/analytics", label: "Analytics", icon: "📈", roles: ["super_admin", "analyst"] },
+  { href: "/admin/parcours", label: "Parcours", icon: "🗺", roles: ["super_admin", "editor"], deprecated: true },
+  { href: "/admin/etapes", label: "Étapes", icon: "📍", roles: ["super_admin", "editor"], deprecated: true },
 ];
 
 function hasAccess(role: AdminRole | null, allowedRoles: AdminRole[]): boolean {
@@ -262,7 +264,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* Nav */}
           <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: "4px", overflowY: "auto" }}>
-            {navItems.map((item) => {
+            {navItems.filter((item) => !item.deprecated).map((item) => {
               const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
               return (
                 <Link
@@ -287,6 +289,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               );
             })}
+
+            {/* Deprecated items */}
+            {navItems.filter((item) => item.deprecated).length > 0 && (
+              <div style={{ marginTop: "auto", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.06em", padding: "4px 14px 8px", }}>
+                  Ancien modèle
+                </div>
+                {navItems.filter((item) => item.deprecated).map((item) => {
+                  const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "8px 14px",
+                        borderRadius: "10px",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        color: isActive ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)",
+                        background: isActive ? "rgba(255,255,255,0.06)" : "transparent",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <span style={{ fontSize: "16px", opacity: 0.5 }}>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </nav>
 
           {/* User + role + logout */}

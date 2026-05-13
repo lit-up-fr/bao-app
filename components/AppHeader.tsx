@@ -118,18 +118,6 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
             {/* Mobile nav links */}
             <div style={{ display: "flex", gap: "12px", marginLeft: "auto", alignItems: "center" }}>
               <Link
-                href="/bao"
-                style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}
-              >
-                Outils
-              </Link>
-              <Link
-                href="/parcours"
-                style={{ color: "var(--anthracite)", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}
-              >
-                Parcours
-              </Link>
-              <Link
                 href="/mon-espace"
                 style={{
                   color: "white",
@@ -239,18 +227,6 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
                 Comprendre la BAO
               </button>
             )}
-            <Link
-              href="/bao"
-              style={{ color: "var(--canard)", textDecoration: "none" }}
-            >
-              Outils
-            </Link>
-            <Link
-              href="/parcours"
-              style={{ color: "var(--anthracite)", textDecoration: "none" }}
-            >
-              Parcours
-            </Link>
             <Link
               href="/proposer"
               style={{ color: "var(--anthracite)", textDecoration: "none" }}

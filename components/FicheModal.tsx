@@ -1,6 +1,6 @@
 "use client";
 
-import type { Fiche, Cle, Etape } from "@/lib/supabase";
+import type { Fiche, Cle, Etape, Objectif } from "@/lib/supabase";
 import { formatDuree, slugify } from "@/lib/supabase";
 import RetoursSection from "@/components/RetoursSection";
 import Link from "next/link";
@@ -12,6 +12,7 @@ interface FicheModalProps {
   onClose: () => void;
   userId?: string | null;
   isAdmin?: boolean;
+  objectifsBao?: Objectif[];
 }
 
 function parseJSON(val: any): any {
@@ -24,7 +25,7 @@ function parseJSON(val: any): any {
   }
 }
 
-export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmin }: FicheModalProps) {
+export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmin, objectifsBao }: FicheModalProps) {
   const duree = formatDuree(fiche);
   const stepColor = etape?.couleur_hex || "var(--canard)";
   const objectifs = parseJSON(fiche.objectifs);
@@ -161,27 +162,6 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
           </h1>
         </div>
 
-        {/* Step badge (small, under title) */}
-        {etape && (
-          <span
-            style={{
-              display: "inline-block",
-              fontSize: "10px",
-              fontWeight: 700,
-              letterSpacing: "0.03em",
-              padding: "3px 10px",
-              borderRadius: "8px",
-              color: stepColor,
-              border: `1.5px solid ${stepColor}`,
-              background: "white",
-              marginBottom: "16px",
-              textTransform: "uppercase",
-            }}
-          >
-            {etape.code} - {etape.nom}
-          </span>
-        )}
-
         {/* Metadata grid */}
         <div
           style={{
@@ -250,6 +230,34 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                     border: "2px solid var(--line)",
                   }}
                 />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Objectifs BAO */}
+        {objectifsBao && objectifsBao.length > 0 && (
+          <div style={{ marginBottom: "20px" }}>
+            <div style={sectionLabelStyle}>Objectifs</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {objectifsBao.map((obj) => (
+                <span
+                  key={obj.id}
+                  style={{
+                    fontSize: "12px",
+                    padding: "4px 10px",
+                    borderRadius: "10px",
+                    color: "var(--canard-dark)",
+                    fontWeight: 600,
+                    background: "#e0f3f4",
+                    border: "1px solid var(--canard)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <span>{obj.emoji}</span> {obj.mot_cle || obj.nom}
+                </span>
               ))}
             </div>
           </div>
@@ -326,7 +334,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
             </div>
           )}
 
-          {/* Objectifs */}
+          {/* Objectifs pédagogiques */}
           {objectifs && Array.isArray(objectifs) && objectifs.length > 0 && (
             <div style={{ marginTop: "32px" }}>
               <SectionHeading text="Objectifs pédagogiques" />

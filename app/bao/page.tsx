@@ -1,22 +1,25 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   getFiches,
   getCles,
   getEtapes,
-  getParcours,
-  getFichesByParcours,
+  getObjectifs,
+  getObjectifsFichesMap,
+  getObjectifsByFiche,
   getClesByFiche,
   getEtapeById,
   type Fiche,
   type Cle,
   type Etape,
-  type Parcours,
+  type Objectif,
 } from "@/lib/supabase";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import AppHeader from "@/components/AppHeader";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { DUREE_TRANCHES, parseDureeLibreToMinutes } from "@/components/Sidebar";
 import FicheCard from "@/components/FicheCard";
 import FicheModal from "@/components/FicheModal";
 import WelcomeModal from "@/components/WelcomeModal";
@@ -26,30 +29,58 @@ interface FicheWithMeta extends Fiche {
   etape: Etape | null;
 }
 
+type ViewMode = "objectifs" | "cles";
+
 export default function BaoPage() {
+  const searchParams = useSearchParams();
   const [fiches, setFiches] = useState<FicheWithMeta[]>([]);
   const [cles, setCles] = useState<Cle[]>([]);
   const [etapes, setEtapes] = useState<Etape[]>([]);
-  const [parcoursList, setParcoursList] = useState<Parcours[]>([]);
+  const [objectifs, setObjectifs] = useState<Objectif[]>([]);
+  const [objectifsFichesMap, setObjectifsFichesMap] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeEtapes, setActiveEtapes] = useState<string[]>([]);
-  const [activeCles, setActiveCles] = useState<string[]>([]);
   const [activeFormats, setActiveFormats] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"step" | "name" | "duration">("step");
+  const [activeDurees, setActiveDurees] = useState<number[]>([]);
+  const [activMateriels, setActivMateriels] = useState<string[]>([]);
+  const [activeCles, setActiveCles] = useState<string[]>([]);
+  const [activeObjectifIds, setActiveObjectifIds] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"name" | "duration">("name");
 
-  const [activeParcours, setActiveParcours] = useState<Parcours | null>(null);
-  const [parcoursFicheIds, setParcoursFicheIds] = useState<string[]>([]);
-  const [parcoursVisible, setParcoursVisible] = useState(true);
-  const [parcoursCountMap, setParcoursCountMap] = useState<Record<string, number>>({});
+  const [activeObjectif, setActiveObjectif] = useState<Objectif | null>(null);
+  const [objectifsVisible, setObjectifsVisible] = useState(true);
+  const [showDiagnosticOverlay, setShowDiagnosticOverlay] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("objectifs");
 
   const [selectedFiche, setSelectedFiche] = useState<FicheWithMeta | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
 
   const { userId, favorisIds, updateFavori, isAdmin } = useCurrentUser();
 
-  // Afficher la modale de bienvenue à la première visite
+  const [alertesCles, setAlertesCles] = useState<string[]>([]);
+  const [alerteAtelier, setAlerteAtelier] = useState("");
+
+  // Lire le mode et les alertes depuis l'URL
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    const alertes = searchParams.get("alertes");
+    const atelier = searchParams.get("atelier");
+    if (mode === "cles") {
+      setViewMode("cles");
+      setObjectifsVisible(true);
+    }
+    if (alertes) {
+      const cleNames = alertes.split(",").filter(Boolean);
+      setAlertesCles(cleNames);
+      // Auto-sélectionner les clés en alerte
+      // On doit attendre que les clés soient chargées
+      setViewMode("cles");
+      setObjectifsVisible(true);
+    }
+    if (atelier) setAlerteAtelier(decodeURIComponent(atelier));
+  }, [searchParams]);
+
   useEffect(() => {
     try {
       const seen = sessionStorage.getItem("bao_welcome_seen");
@@ -65,8 +96,8 @@ export default function BaoPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [fichesData, clesData, etapesData, parcoursData] = await Promise.all([
-          getFiches(), getCles(), getEtapes(), getParcours(),
+        const [fichesData, clesData, etapesData, objectifsData, objFichesMap] = await Promise.all([
+          getFiches(), getCles(), getEtapes(), getObjectifs(), getObjectifsFichesMap(),
         ]);
         const fichesWithMeta = await Promise.all(
           fichesData.map(async (f) => {
@@ -80,16 +111,18 @@ export default function BaoPage() {
         setFiches(fichesWithMeta);
         setCles(clesData);
         setEtapes(etapesData);
-        setParcoursList(parcoursData);
+        setObjectifs(objectifsData);
+        setObjectifsFichesMap(objFichesMap);
 
-        const counts: Record<string, number> = {};
-        await Promise.all(
-          parcoursData.map(async (p) => {
-            const pf = await getFichesByParcours(p.id);
-            counts[p.id] = pf.length;
-          })
-        );
-        setParcoursCountMap(counts);
+        // Auto-sélectionner les clés en alerte depuis l'URL
+        const alertesParam = new URLSearchParams(window.location.search).get("alertes");
+        if (alertesParam && clesData.length > 0) {
+          const cleNames = alertesParam.split(",").filter(Boolean);
+          const matchedIds = clesData
+            .filter((c: any) => cleNames.some((name) => c.nom.toLowerCase().includes(name.toLowerCase())))
+            .map((c: any) => c.id);
+          if (matchedIds.length > 0) setActiveCles(matchedIds);
+        }
       } catch (err) {
         console.error("Erreur chargement données:", err);
       } finally {
@@ -99,25 +132,80 @@ export default function BaoPage() {
     loadData();
   }, []);
 
-  const selectParcours = async (p: Parcours) => {
-    if (activeParcours?.id === p.id) { setActiveParcours(null); setParcoursFicheIds([]); return; }
-    setActiveParcours(p);
-    const pf = await getFichesByParcours(p.id);
-    setParcoursFicheIds(pf.map((f) => f.id));
+  /* ── Objectif selection (mode objectifs) ── */
+  const selectObjectif = (obj: Objectif) => {
+    if (obj.ordre === 1) {
+      setShowDiagnosticOverlay(true);
+      return;
+    }
+    setActiveObjectif(activeObjectif?.id === obj.id ? null : obj);
   };
-  const clearParcours = () => { setActiveParcours(null); setParcoursFicheIds([]); };
+  const clearObjectif = () => setActiveObjectif(null);
 
+  const activeFicheIdsByObjectif = useMemo(() => {
+    if (!activeObjectif) return null;
+    return objectifsFichesMap[activeObjectif.id] || [];
+  }, [activeObjectif, objectifsFichesMap]);
+
+  /* ── Objectif filter (mode cles, sidebar) ── */
+  const activeFicheIdsByObjectifFilter = useMemo(() => {
+    if (activeObjectifIds.length === 0) return null;
+    const ids = new Set<string>();
+    activeObjectifIds.forEach((objId) => {
+      (objectifsFichesMap[objId] || []).forEach((fId) => ids.add(fId));
+    });
+    return Array.from(ids);
+  }, [activeObjectifIds, objectifsFichesMap]);
+
+  /* ── Diagnostic overlay actions ── */
+  const handleDiagFaireLeTest = () => {
+    const obj1 = objectifs.find((o) => o.ordre === 1);
+    if (obj1) setActiveObjectif(obj1);
+    setViewMode("objectifs");
+    setShowDiagnosticOverlay(false);
+  };
+  const handleDiagTrouverOutils = () => {
+    setActiveObjectif(null);
+    setActiveCles([]);
+    setActiveObjectifIds([]);
+    setViewMode("cles");
+    setObjectifsVisible(true);
+    setShowDiagnosticOverlay(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const handleBackToObjectifs = () => {
+    setViewMode("objectifs");
+    setActiveCles([]);
+    setActiveObjectifIds([]);
+  };
+
+  /* ── Derived filter data ── */
   const formats = useMemo(() => {
     const s = new Set<string>();
-    fiches.forEach((f) => { if (f.format) s.add(f.format); });
+    fiches.forEach((f) => {
+      if (!f.format) return;
+      const fmt = f.format.toLowerCase();
+      if (fmt.includes("collectif")) s.add("Collectif");
+      if (fmt.includes("individuel")) s.add("Individuel");
+    });
     return Array.from(s).sort();
   }, [fiches]);
 
-  const fichesCountByEtape = useMemo(() => {
-    const c: Record<string, number> = {};
-    fiches.forEach((f) => { if (f.etape_id) c[f.etape_id] = (c[f.etape_id] || 0) + 1; });
-    return c;
+  const materiels = useMemo(() => {
+    const s = new Set<string>();
+    fiches.forEach((f) => { if (f.materiel) s.add(f.materiel); });
+    return Array.from(s).sort();
   }, [fiches]);
+
+  const fichesCountByObjectif = useMemo(() => {
+    const c: Record<string, number> = {};
+    const publishedIds = new Set(fiches.map((f) => f.id));
+    objectifs.forEach((obj) => {
+      const ids = objectifsFichesMap[obj.id] || [];
+      c[obj.id] = ids.filter((id) => publishedIds.has(id)).length;
+    });
+    return c;
+  }, [objectifs, objectifsFichesMap, fiches]);
 
   const fichesCountByCle = useMemo(() => {
     const c: Record<string, number> = {};
@@ -125,133 +213,245 @@ export default function BaoPage() {
     return c;
   }, [fiches]);
 
+  /* ── Filtering ── */
   const filtered = useMemo(() => {
     let r = fiches.filter((f) => {
       const q = searchQuery.toLowerCase();
-      return (!q || f.nom.toLowerCase().includes(q) || (f.intention || "").toLowerCase().includes(q) || (f.pourquoi || "").toLowerCase().includes(q))
-        && (activeEtapes.length === 0 || (f.etape_id && activeEtapes.includes(f.etape_id)))
-        && (activeCles.length === 0 || f.fichesCles.some((c) => activeCles.includes(c.id)))
-        && (activeFormats.length === 0 || (f.format && activeFormats.includes(f.format)))
-        && (parcoursFicheIds.length === 0 || parcoursFicheIds.includes(f.id));
+      const matchSearch = !q || f.nom.toLowerCase().includes(q) || (f.intention || "").toLowerCase().includes(q) || (f.pourquoi || "").toLowerCase().includes(q) || (f.materiel || "").toLowerCase().includes(q) || (f.source || "").toLowerCase().includes(q) || JSON.stringify(f.objectifs || "").toLowerCase().includes(q) || JSON.stringify(f.deroule || "").toLowerCase().includes(q) || JSON.stringify(f.conseils || "").toLowerCase().includes(q) || JSON.stringify(f.variantes || "").toLowerCase().includes(q) || f.fichesCles.some((c) => c.nom.toLowerCase().includes(q));
+      let matchFormat = true;
+      if (activeFormats.length > 0) {
+        if (!f.format) { matchFormat = false; }
+        else { const fmt = f.format.toLowerCase(); matchFormat = activeFormats.some((af) => fmt.includes(af.toLowerCase())); }
+      }
+      // Mode objectifs : filtre par objectif sélectionné en haut
+      const matchObjectifCard = activeFicheIdsByObjectif === null || activeFicheIdsByObjectif.includes(f.id);
+      // Mode cles : filtre par objectif dans la sidebar
+      const matchObjectifSidebar = activeFicheIdsByObjectifFilter === null || activeFicheIdsByObjectifFilter.includes(f.id);
+      // Clés : en mode cles, filtre par clé sélectionnée en haut
+      const matchCle = activeCles.length === 0 || f.fichesCles.some((c) => activeCles.includes(c.id));
+      const matchMateriel = activMateriels.length === 0 || (f.materiel && activMateriels.includes(f.materiel));
+      let matchDuree = true;
+      if (activeDurees.length > 0) {
+        const dureeVal = f.duree_min || parseDureeLibreToMinutes(f.duree_libre) || 0;
+        if (dureeVal === 0) { matchDuree = false; }
+        else { matchDuree = activeDurees.some((idx) => { const t = DUREE_TRANCHES[idx]; return dureeVal >= t.min && dureeVal <= t.max; }); }
+      }
+      return matchSearch && matchFormat && matchObjectifCard && matchObjectifSidebar && matchCle && matchMateriel && matchDuree;
     });
-    if (sortBy === "name") r = [...r].sort((a, b) => a.nom.localeCompare(b.nom));
-    else if (sortBy === "duration") r = [...r].sort((a, b) => (a.duree_min || 999) - (b.duree_min || 999));
-    else r = [...r].sort((a, b) => (a.etape?.ordre ?? 999) - (b.etape?.ordre ?? 999) || a.nom.localeCompare(b.nom));
+    if (sortBy === "duration") {
+      r = [...r].sort((a, b) => {
+        const da = a.duree_min || parseDureeLibreToMinutes(a.duree_libre) || 999;
+        const db = b.duree_min || parseDureeLibreToMinutes(b.duree_libre) || 999;
+        return da - db;
+      });
+    } else { r = [...r].sort((a, b) => a.nom.localeCompare(b.nom)); }
     return r;
-  }, [fiches, searchQuery, activeEtapes, activeCles, activeFormats, parcoursFicheIds, sortBy]);
+  }, [fiches, searchQuery, activeFormats, activeFicheIdsByObjectif, activeFicheIdsByObjectifFilter, activeCles, activMateriels, activeDurees, sortBy]);
 
-  const toggleEtape = (id: string) => setActiveEtapes((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
-  const toggleCle = (id: string) => setActiveCles((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  /* ── Toggle helpers ── */
   const toggleFormat = (f: string) => setActiveFormats((p) => p.includes(f) ? p.filter((x) => x !== f) : [...p, f]);
-  const resetFilters = () => { setActiveEtapes([]); setActiveCles([]); setActiveFormats([]); setSearchQuery(""); clearParcours(); };
+  const toggleDuree = (idx: number) => setActiveDurees((p) => p.includes(idx) ? p.filter((x) => x !== idx) : [...p, idx]);
+  const toggleMateriel = (m: string) => setActivMateriels((p) => p.includes(m) ? p.filter((x) => x !== m) : [...p, m]);
+  const toggleCle = (id: string) => setActiveCles((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  const toggleObjectifFilter = (id: string) => setActiveObjectifIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  const resetFilters = () => {
+    setActiveFormats([]); setActiveDurees([]); setActivMateriels([]); setActiveCles([]);
+    setActiveObjectifIds([]); setSearchQuery(""); clearObjectif();
+  };
 
   return (
     <>
       <style>{`
         @media (max-width: 768px) {
-          .bao-main-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .bao-results {
-            padding: 16px !important;
-            padding-bottom: 100px !important;
-          }
-          .bao-results-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .bao-parcours-header {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-          }
-          .bao-parcours-header-text {
-            flex-direction: column !important;
-            gap: 2px !important;
-          }
-          .bao-parcours-header-text span:first-child {
-            font-size: 16px !important;
-          }
-          .bao-parcours-section {
-            padding: 16px !important;
-          }
-          .bao-parcours-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .bao-results-header {
-            flex-direction: column !important;
-            gap: 8px !important;
-          }
-          .bao-active-parcours-bar {
-            flex-wrap: wrap !important;
-            padding: 12px 16px !important;
-          }
+          .bao-main-grid { grid-template-columns: 1fr !important; }
+          .bao-results { padding: 16px !important; padding-bottom: 100px !important; }
+          .bao-results-grid { grid-template-columns: 1fr !important; }
+          .bao-top-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+          .bao-top-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+          .bao-top-section { padding: 16px !important; }
+          .bao-results-header { flex-direction: column !important; gap: 8px !important; }
+          .bao-active-bar { flex-wrap: wrap !important; padding: 12px 16px !important; }
+          .diag-overlay-inner { max-width: 95vw !important; padding: 28px 20px !important; }
+          .diag-cards-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .diag-cards-grid > button,
+          .diag-cards-grid > div { padding: 20px 16px !important; flex-direction: row !important; text-align: left !important; }
+          .diag-cards-grid > button > span:first-child,
+          .diag-cards-grid > div > span:first-child { font-size: 28px !important; }
+        }
+        @media (max-width: 480px) {
+          .bao-top-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
 
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--blanc)" }}>
         <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} onOpenGuide={() => setShowWelcome(true)} />
 
-        {/* ═══ Parcours guidés ═══ */}
-        {parcoursVisible && parcoursList.length > 0 && (
-          <div className="bao-parcours-section" style={{ borderBottom: "2px solid var(--line)", background: "white", padding: "20px 28px 24px" }}>
-            <div className="bao-parcours-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", maxWidth: "1500px", margin: "0 auto 16px" }}>
-              <div className="bao-parcours-header-text" style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-                <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--anthracite)" }}>Par où commencer ?</span>
-                <em style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--jaune-accent)", fontStyle: "italic" }}>— choisissez votre situation</em>
+        {/* ═══ Top section: Objectifs (default) or Clés de motivation ═══ */}
+        {objectifsVisible && (
+          <div className="bao-top-section" style={{ borderBottom: "2px solid var(--line)", background: "white", padding: "20px 28px 24px" }}>
+            <div className="bao-top-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", maxWidth: "1500px", margin: "0 auto 16px" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
+                {viewMode === "objectifs" ? (
+                  <>
+                    <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--anthracite)" }}>Mes objectifs</span>
+                    <em style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--jaune-accent)", fontStyle: "italic" }}>— que souhaitez-vous accomplir ?</em>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--anthracite)" }}>Clés de motivation</span>
+                    <em style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--jaune-accent)", fontStyle: "italic" }}>— sur quel levier agir ?</em>
+                    <Link href="/bao/cles-motivation" style={{ fontSize: "12px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "3px 10px", border: "1.5px solid var(--canard)", borderRadius: "12px", whiteSpace: "nowrap" }}>
+                      En savoir plus →
+                    </Link>
+                  </>
+                )}
               </div>
-              <button onClick={() => setParcoursVisible(false)} style={{ background: "transparent", border: "1.5px solid var(--line)", borderRadius: "16px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "var(--muted)", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-                Masquer ▲
-              </button>
-            </div>
-            <div className="bao-parcours-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px", maxWidth: "1500px", margin: "0 auto" }}>
-              {parcoursList.map((p) => (
-                <button key={p.id} onClick={() => selectParcours(p)} style={{
-                  background: activeParcours?.id === p.id ? "var(--canard)" : "white",
-                  color: activeParcours?.id === p.id ? "white" : "var(--anthracite)",
-                  border: `2px solid ${activeParcours?.id === p.id ? "var(--canard)" : "var(--line)"}`,
-                  borderRadius: "14px", padding: "16px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.2s", position: "relative", overflow: "hidden",
-                }}>
-                  {parcoursCountMap[p.id] !== undefined && (
-                    <span style={{ position: "absolute", top: "10px", right: "10px", background: activeParcours?.id === p.id ? "white" : "var(--canard)", color: activeParcours?.id === p.id ? "var(--canard)" : "white", fontSize: "11px", fontWeight: 700, width: "22px", height: "22px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {parcoursCountMap[p.id]}
-                    </span>
-                  )}
-                  <div style={{ fontSize: "24px", marginBottom: "8px" }}>{p.emoji || "📋"}</div>
-                  <div style={{ fontSize: "14px", fontWeight: 700, lineHeight: 1.25, marginBottom: "6px" }}>{p.titre}</div>
-                  {p.description && (
-                    <div style={{ fontSize: "12px", lineHeight: 1.4, opacity: 0.75, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {p.description}
-                    </div>
-                  )}
+              <div style={{ display: "flex", gap: "8px" }}>
+                {viewMode === "cles" && (
+                  <button onClick={handleBackToObjectifs} style={{ background: "var(--canard)", border: "none", borderRadius: "16px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "white", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                    ← Retour aux objectifs
+                  </button>
+                )}
+                {viewMode === "objectifs" && activeObjectif && (
+                  <button onClick={clearObjectif} style={{ background: "var(--canard)", border: "none", borderRadius: "16px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "white", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                    ✕ Tous les outils
+                  </button>
+                )}
+                {viewMode === "cles" && activeCles.length > 0 && (
+                  <button onClick={() => setActiveCles([])} style={{ background: "var(--canard)", border: "none", borderRadius: "16px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "white", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                    ✕ Toutes les clés
+                  </button>
+                )}
+                <button onClick={() => setObjectifsVisible(false)} style={{ background: "transparent", border: "1.5px solid var(--line)", borderRadius: "16px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "var(--muted)", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                  Masquer ▲
                 </button>
-              ))}
+              </div>
             </div>
+
+            {viewMode === "objectifs" ? (
+              /* ── Cartes Objectifs ── */
+              <div className="bao-top-grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "10px", maxWidth: "1500px", margin: "0 auto" }}>
+                {objectifs.map((obj) => {
+                  const isActive = activeObjectif?.id === obj.id;
+                  const count = fichesCountByObjectif[obj.id] || 0;
+                  return (
+                    <button key={obj.id} onClick={() => selectObjectif(obj)} style={{
+                      background: isActive ? "var(--canard)" : "white",
+                      color: isActive ? "white" : "var(--anthracite)",
+                      border: `2px solid ${isActive ? "var(--canard)" : "var(--line)"}`,
+                      borderRadius: "14px", padding: "14px 14px 12px", cursor: "pointer",
+                      textAlign: "center", fontFamily: "inherit", transition: "all 0.2s",
+                      position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
+                    }}
+                      onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f0fafa"; } }}
+                      onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; } }}
+                    >
+                      <span style={{ position: "absolute", top: "8px", right: "8px", background: isActive ? "white" : "var(--canard)", color: isActive ? "var(--canard)" : "white", fontSize: "10px", fontWeight: 700, width: "20px", height: "20px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+                      <span style={{ fontSize: "28px", lineHeight: 1 }}>{obj.emoji || "📋"}</span>
+                      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.6 }}>{obj.mot_cle}</span>
+                      <span style={{ fontSize: "12px", fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{obj.nom}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* ── Cartes Clés de motivation ── */
+              <div className="bao-top-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "10px", maxWidth: "1500px", margin: "0 auto" }}>
+                {cles.map((cle) => {
+                  const isActive = activeCles.includes(cle.id);
+                  const count = fichesCountByCle[cle.id] || 0;
+                  return (
+                    <button key={cle.id} onClick={() => toggleCle(cle.id)} style={{
+                      background: isActive ? (cle.couleur_hex || "var(--canard)") : "white",
+                      color: isActive ? "white" : "var(--anthracite)",
+                      border: `2px solid ${isActive ? (cle.couleur_hex || "var(--canard)") : "var(--line)"}`,
+                      borderRadius: "14px", padding: "14px 14px 12px", cursor: "pointer",
+                      textAlign: "center", fontFamily: "inherit", transition: "all 0.2s",
+                      position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
+                    }}
+                      onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = cle.couleur_hex || "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f8f8fa"; } }}
+                      onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; } }}
+                    >
+                      <span style={{ position: "absolute", top: "8px", right: "8px", background: isActive ? "white" : (cle.couleur_hex || "var(--canard)"), color: isActive ? (cle.couleur_hex || "var(--canard)") : "white", fontSize: "10px", fontWeight: 700, width: "20px", height: "20px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+                      <span style={{ fontSize: "28px", lineHeight: 1 }}>{cle.emoji || "🔑"}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, lineHeight: 1.3 }}>
+                        {cle.nom.split(" (")[0]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {!parcoursVisible && parcoursList.length > 0 && (
+        {/* Bouton réafficher */}
+        {!objectifsVisible && (
           <div style={{ borderBottom: "2px solid var(--line)", background: "white", padding: "8px 28px" }}>
-            <button onClick={() => setParcoursVisible(true)} style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "var(--canard)", padding: "4px 0" }}>
-              + Afficher les parcours guidés
+            <button onClick={() => setObjectifsVisible(true)} style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "13px", fontWeight: 600, cursor: "pointer", color: "var(--canard)", padding: "4px 0" }}>
+              + Afficher {viewMode === "objectifs" ? "les objectifs" : "les clés de motivation"}
             </button>
           </div>
         )}
 
-        {activeParcours && (
-          <div className="bao-active-parcours-bar" style={{ background: "var(--canard)", color: "white", padding: "12px 28px", display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "20px" }}>{activeParcours.emoji}</span>
+        {/* Barre objectif actif (mode objectifs) */}
+        {viewMode === "objectifs" && activeObjectif && (
+          <div className="bao-active-bar" style={{ background: "var(--canard)", color: "white", padding: "12px 28px", display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "22px" }}>{activeObjectif.emoji}</span>
             <div style={{ flexGrow: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: "14px" }}>{activeParcours.titre}</div>
-              {activeParcours.description && <div style={{ fontSize: "12px", opacity: 0.8 }}>{activeParcours.description}</div>}
+              <div style={{ fontWeight: 700, fontSize: "14px" }}>{activeObjectif.nom}</div>
+              {activeObjectif.description && <div style={{ fontSize: "12px", opacity: 0.8, marginTop: "2px" }}>{activeObjectif.description}</div>}
             </div>
-            <button onClick={clearParcours} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", padding: "6px 14px", borderRadius: "14px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+            <button onClick={clearObjectif} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", padding: "6px 14px", borderRadius: "14px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
               ✕ Tout afficher
             </button>
           </div>
         )}
 
-        <div className="bao-main-grid" style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, maxWidth: "1500px", margin: "0 auto", flexGrow: 1, width: "100%" }}>
-          <Sidebar etapes={etapes} cles={cles} formats={formats} activeEtapes={activeEtapes} activeCles={activeCles} activeFormats={activeFormats} onToggleEtape={toggleEtape} onToggleCle={toggleCle} onToggleFormat={toggleFormat} onReset={resetFilters} fichesCountByEtape={fichesCountByEtape} fichesCountByCle={fichesCountByCle} />
+        {/* Bandeau alertes diagnostic */}
+        {alertesCles.length > 0 && viewMode === "cles" && (
+          <div style={{ background: "#fff7ed", borderBottom: "2px solid #fed7aa", padding: "12px 28px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "16px" }}>⚠️</span>
+            <div style={{ flexGrow: 1, fontSize: "14px", color: "var(--anthracite)" }}>
+              <strong>Clés à renforcer{alerteAtelier ? ` pour "${alerteAtelier}"` : ""} :</strong>{" "}
+              {alertesCles.map((nom, i) => {
+                const cleData = cles.find((c) => c.nom.toLowerCase().includes(nom.toLowerCase()));
+                return (
+                  <span key={nom}>
+                    {i > 0 && ", "}
+                    {cleData?.emoji || "🔑"} {nom}
+                  </span>
+                );
+              })}
+            </div>
+            <button onClick={() => { setAlertesCles([]); setAlerteAtelier(""); setActiveCles([]); }} style={{ background: "rgba(234, 88, 12, 0.15)", border: "none", color: "#ea580c", padding: "4px 12px", borderRadius: "12px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+              ✕ Fermer
+            </button>
+          </div>
+        )}
+
+        <div className="bao-main-grid" style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 0, maxWidth: "1500px", margin: "0 auto", flexGrow: 1, width: "100%" }}>
+          <Sidebar
+            formats={formats}
+            activeFormats={activeFormats}
+            onToggleFormat={toggleFormat}
+            activeDurees={activeDurees}
+            onToggleDuree={toggleDuree}
+            materiels={materiels}
+            activMateriels={activMateriels}
+            onToggleMateriel={toggleMateriel}
+            cles={cles}
+            activeCles={activeCles}
+            onToggleCle={toggleCle}
+            objectifs={objectifs}
+            activeObjectifs={activeObjectifIds}
+            onToggleObjectif={toggleObjectifFilter}
+            fichesCountByObjectif={fichesCountByObjectif}
+            viewMode={viewMode}
+            onReset={resetFilters}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
 
           <section className="bao-results" style={{ padding: "28px 32px 80px" }}>
             <div className="bao-results-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
@@ -259,8 +459,7 @@ export default function BaoPage() {
                 <strong style={{ color: "var(--canard)", fontWeight: 800 }}>{loading ? "—" : filtered.length}</strong> outils
                 <span style={{ fontFamily: "'Caveat', cursive", fontWeight: 500, color: "var(--jaune-accent)", fontSize: "22px", marginLeft: "6px" }}>pour avancer.</span>
               </div>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "step" | "name" | "duration")} style={{ fontSize: "13px", fontFamily: "inherit", fontWeight: 600, padding: "7px 14px", border: "2px solid var(--line-strong)", background: "white", color: "var(--anthracite)", cursor: "pointer", borderRadius: "18px" }}>
-                <option value="step">Trier par étape du parcours</option>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "name" | "duration")} style={{ fontSize: "13px", fontFamily: "inherit", fontWeight: 600, padding: "7px 14px", border: "2px solid var(--line-strong)", background: "white", color: "var(--anthracite)", cursor: "pointer", borderRadius: "18px" }}>
                 <option value="name">Trier par nom</option>
                 <option value="duration">Trier par durée</option>
               </select>
@@ -301,13 +500,63 @@ export default function BaoPage() {
         </div>
 
         {selectedFiche && (
-          <FicheModal fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} userId={userId} isAdmin={isAdmin} />
+          <FicheModalWrapper fiche={selectedFiche} cles={selectedFiche.fichesCles} etape={selectedFiche.etape} onClose={() => setSelectedFiche(null)} userId={userId} isAdmin={isAdmin} />
         )}
+        {showWelcome && <WelcomeModal onClose={closeWelcome} />}
 
-        {showWelcome && (
-          <WelcomeModal onClose={closeWelcome} />
+        {/* ═══ Diagnostic Overlay ═══ */}
+        {showDiagnosticOverlay && (
+          <div onClick={() => setShowDiagnosticOverlay(false)} style={{ position: "fixed", inset: 0, background: "rgba(43, 52, 66, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+            <div className="diag-overlay-inner" onClick={(e) => e.stopPropagation()} style={{ background: "white", maxWidth: "780px", width: "100%", borderRadius: "20px", padding: "40px 36px", position: "relative", animation: "modalIn 0.3s ease", maxHeight: "90vh", overflowY: "auto" }}>
+              <button onClick={() => setShowDiagnosticOverlay(false)} style={{ position: "absolute", top: "16px", right: "16px", background: "var(--blanc)", border: "none", fontSize: "22px", cursor: "pointer", color: "var(--anthracite)", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <div style={{ textAlign: "center", marginBottom: "28px" }}>
+                <span style={{ fontSize: "36px" }}>🔍</span>
+                <h2 style={{ fontSize: "24px", fontWeight: 800, color: "var(--anthracite)", margin: "12px 0 6px", letterSpacing: "-0.02em" }}>Diagnostiquer la motivation</h2>
+                <p style={{ fontSize: "15px", color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>Identifiez les leviers et freins de motivation de votre groupe ou d'un jeune</p>
+              </div>
+              <div className="diag-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                <button onClick={handleDiagFaireLeTest} style={{ background: "white", border: "2px solid var(--line)", borderRadius: "16px", padding: "28px 20px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f0fafa"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; }}>
+                  <span style={{ fontSize: "32px" }}>🧭</span>
+                  <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--anthracite)", lineHeight: 1.3 }}>Faire le diagnostic</span>
+                  <span style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>Utilisez un outil pour identifier les leviers et freins de motivation</span>
+                </button>
+                <Link href="/bao/analyse" onClick={() => setShowDiagnosticOverlay(false)} style={{ background: "white", border: "2px solid var(--line)", borderRadius: "16px", padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", cursor: "pointer", transition: "all 0.2s", textDecoration: "none", color: "inherit" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f0fafa"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; }}>
+                  <span style={{ fontSize: "32px" }}>📊</span>
+                  <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--anthracite)", lineHeight: 1.3 }}>Analyser les résultats</span>
+                  <span style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>Décryptez les résultats et comprenez les dynamiques de votre groupe</span>
+                </Link>
+                <button onClick={handleDiagTrouverOutils} style={{ background: "white", border: "2px solid var(--line)", borderRadius: "16px", padding: "28px 20px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f0fafa"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; }}>
+                  <span style={{ fontSize: "32px" }}>🔑</span>
+                  <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--anthracite)", lineHeight: 1.3 }}>Trouver les bons outils</span>
+                  <span style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>Explorez les outils adaptés à chaque clé de motivation</span>
+                </button>
+              </div>
+              <div style={{ textAlign: "center", marginTop: "20px" }}>
+                <Link href="/bao/cles-motivation" onClick={() => setShowDiagnosticOverlay(false)} style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none" }}>
+                  🔑 Comprendre les 9 clés de la motivation →
+                </Link>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>
+  );
+}
+
+/* Wrapper qui charge les objectifs BAO pour la fiche sélectionnée */
+function FicheModalWrapper({ fiche, cles, etape, onClose, userId, isAdmin }: {
+  fiche: FicheWithMeta; cles: Cle[]; etape: Etape | null; onClose: () => void; userId: string | null; isAdmin: boolean;
+}) {
+  const [objectifsBao, setObjectifsBao] = useState<Objectif[]>([]);
+  useEffect(() => { getObjectifsByFiche(fiche.id).then(setObjectifsBao); }, [fiche.id]);
+  return (
+    <FicheModal fiche={fiche} cles={cles} etape={etape} onClose={onClose} userId={userId} isAdmin={isAdmin} objectifsBao={objectifsBao} />
   );
 }

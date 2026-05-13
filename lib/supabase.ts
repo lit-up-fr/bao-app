@@ -44,6 +44,7 @@ export interface Cle {
   description: string | null;
   description_longue: string | null;
   couleur_hex: string | null;
+  emoji: string | null;
   ordre: number;
 }
 
@@ -64,6 +65,16 @@ export interface Parcours {
   emoji: string | null;
   couleur_hex: string | null;
   ordre: number;
+}
+
+export interface Objectif {
+  id: string;
+  nom: string;
+  description: string | null;
+  emoji: string | null;
+  mot_cle: string | null;
+  ordre: number;
+  created_at: string;
 }
 
 // ---------- Data fetchers ----------
@@ -140,8 +151,6 @@ export async function getParcours(): Promise<Parcours[]> {
 }
 
 export async function getParcoursBySlug(slug: string): Promise<Parcours | null> {
-  // parcours_guides n'a pas de slug, on cherche par titre transformé
-  // ou on peut chercher par id. Pour l'instant on cherche par titre encodé.
   const { data, error } = await supabase
     .from("parcours_guides")
     .select("*")
@@ -176,6 +185,71 @@ export async function getFichesByParcours(parcoursId: string): Promise<Fiche[]> 
   return (data || []).map((d: any) => d.fiches).filter(Boolean);
 }
 
+// ---------- Objectifs ----------
+
+export async function getObjectifs(): Promise<Objectif[]> {
+  const { data, error } = await supabase
+    .from("objectifs")
+    .select("*")
+    .order("ordre");
+  if (error) {
+    console.error("Erreur getObjectifs:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getObjectifById(id: string): Promise<Objectif | null> {
+  const { data, error } = await supabase
+    .from("objectifs")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) return null;
+  return data;
+}
+
+export async function getFicheIdsByObjectif(objectifId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("objectifs_fiches")
+    .select("fiche_id")
+    .eq("objectif_id", objectifId)
+    .order("ordre");
+  if (error) {
+    console.error("Erreur getFicheIdsByObjectif:", error.message);
+    return [];
+  }
+  return (data || []).map((d: any) => d.fiche_id);
+}
+
+export async function getObjectifsByFiche(ficheId: string): Promise<Objectif[]> {
+  const { data, error } = await supabase
+    .from("objectifs_fiches")
+    .select("objectif_id, objectifs(*)")
+    .eq("fiche_id", ficheId);
+  if (error) {
+    console.error("Erreur getObjectifsByFiche:", error.message);
+    return [];
+  }
+  return (data || []).map((d: any) => d.objectifs).filter(Boolean);
+}
+
+export async function getObjectifsFichesMap(): Promise<Record<string, string[]>> {
+  const { data, error } = await supabase
+    .from("objectifs_fiches")
+    .select("objectif_id, fiche_id");
+  if (error) {
+    console.error("Erreur getObjectifsFichesMap:", error.message);
+    return {};
+  }
+  const map: Record<string, string[]> = {};
+  (data || []).forEach((row: any) => {
+    if (!map[row.objectif_id]) map[row.objectif_id] = [];
+    map[row.objectif_id].push(row.fiche_id);
+  });
+  return map;
+}
+
 // ---------- Helpers ----------
 
 export function slugify(text: string): string {
@@ -189,12 +263,21 @@ export function slugify(text: string): string {
 
 export function formatDuree(fiche: Fiche): string | null {
   if (fiche.duree_libre) return fiche.duree_libre;
-  if (fiche.duree_min && fiche.duree_max) return `${fiche.duree_min}–${fiche.duree_max} min`;
-  if (fiche.duree_min) return `${fiche.duree_min} min`;
-  return null;
+  if (!fiche.duree_min) return null;
+
+  function minToStr(m: number): string {
+    if (m < 60) return `${m} min`;
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    return r > 0 ? `${h}h${r.toString().padStart(2, "0")}` : `${h}h`;
+  }
+
+  if (fiche.duree_max && fiche.duree_max !== fiche.duree_min) {
+    return `${minToStr(fiche.duree_min)} – ${minToStr(fiche.duree_max)}`;
+  }
+  return minToStr(fiche.duree_min);
 }
 
-// Additional helper
 export async function getEtapeById(etapeId: string): Promise<Etape | null> {
   const { data, error } = await supabase
     .from("etapes_parcours")

@@ -62,7 +62,7 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
         }}
       />
 
-      {/* Header: emoji + favori + audience */}
+      {/* Header: emoji + favori */}
       <div
         style={{
           display: "flex",
@@ -76,32 +76,14 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
           {emoji || "🔧"}
         </span>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          {userId && (
-            <FavoriButton
-              ficheId={fiche.id}
-              userId={userId}
-              isFavori={isFavori || false}
-              onToggle={(newState) => onFavoriToggle?.(fiche.id, newState)}
-            />
-          )}
-          {fiche.public_pro_pair && (
-            <span
-              style={{
-                fontSize: "9px",
-                letterSpacing: "0.08em",
-                color: "var(--muted)",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                background: "var(--blanc)",
-                padding: "3px 7px",
-                borderRadius: "8px",
-              }}
-            >
-              {fiche.public_pro_pair}
-            </span>
-          )}
-        </div>
+        {userId && (
+          <FavoriButton
+            ficheId={fiche.id}
+            userId={userId}
+            isFavori={isFavori || false}
+            onToggle={(newState) => onFavoriToggle?.(fiche.id, newState)}
+          />
+        )}
       </div>
 
       {/* Title */}
@@ -164,19 +146,15 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
         )}
       </div>
 
-      {/* Bottom section: cles + etape badge */}
-      <div
-        style={{
-          marginTop: "auto",
-          paddingTop: "12px",
-          borderTop: "1px dashed var(--line)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
-      >
-        {/* Key pills */}
-        {cles.length > 0 && (
+      {/* Bottom section: cles */}
+      {cles.length > 0 && (
+        <div
+          style={{
+            marginTop: "auto",
+            paddingTop: "12px",
+            borderTop: "1px dashed var(--line)",
+          }}
+        >
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
             {cles.map((cle) => (
               <span
@@ -195,28 +173,8 @@ export default function FicheCard({ fiche, cles, etape, onClick, userId, isFavor
               </span>
             ))}
           </div>
-        )}
-
-        {/* Etape badge - now at bottom */}
-        {etape && (
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: 700,
-              letterSpacing: "0.03em",
-              padding: "3px 8px",
-              borderRadius: "8px",
-              color: stepColor,
-              border: `1.5px solid ${stepColor}`,
-              background: "white",
-              alignSelf: "flex-start",
-              textTransform: "uppercase",
-            }}
-          >
-            {etape.code} - {etape.nom}
-          </span>
-        )}
-      </div>
+        </div>
+      )}
     </button>
   );
 }

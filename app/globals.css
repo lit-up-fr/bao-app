@@ -235,3 +235,15 @@ h1, h2, h3, h4 {
 .landing-arrow {
   transition: transform 0.3s ease;
 }
+/* === LIENS DANS LE CONTENU DES FICHES === */
+.modal-content a,
+.fiche-content a {
+  color: var(--canard);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+.modal-content a:hover,
+.fiche-content a:hover {
+  color: var(--canard-dark);
+}

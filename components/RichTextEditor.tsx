@@ -22,10 +22,8 @@ export default function RichTextEditor({ value, onChange, placeholder, rows = 4 
   const initializedRef = useRef(false);
   const lastValueRef = useRef(value);
 
-  // Set initial content once, or when value changes externally (loading data)
   useEffect(() => {
     if (!editorRef.current) return;
-    // Only set innerHTML if the value changed externally (not from our own edits)
     if (value !== lastValueRef.current || !initializedRef.current) {
       if (!initializedRef.current || (editorRef.current.innerHTML !== value && !document.activeElement?.closest("[contenteditable]"))) {
         editorRef.current.innerHTML = value || "";
@@ -55,7 +53,32 @@ export default function RichTextEditor({ value, onChange, placeholder, rows = 4 
     }
   }, []);
 
-  // Only sync to parent on blur (when user leaves the field)
+  const insertLink = useCallback(() => {
+    const sel = window.getSelection();
+    const selectedText = sel && sel.rangeCount > 0 ? sel.toString() : "";
+
+    const url = prompt("URL du lien :", "https://");
+    if (!url || url === "https://") return;
+
+    const text = selectedText || prompt("Texte du lien :", url);
+    if (!text) return;
+
+    editorRef.current?.focus();
+
+    if (selectedText) {
+      // Du texte est sélectionné : on le transforme en lien
+      document.execCommand("insertHTML", false, `<a href="${url}" target="_blank" rel="noopener">${selectedText}</a>`);
+    } else {
+      // Pas de sélection : on insère un nouveau lien
+      document.execCommand("insertHTML", false, `<a href="${url}" target="_blank" rel="noopener">${text}</a>&nbsp;`);
+    }
+  }, []);
+
+  const removeLink = useCallback(() => {
+    editorRef.current?.focus();
+    document.execCommand("unlink", false);
+  }, []);
+
   const handleBlur = useCallback(() => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
@@ -120,8 +143,17 @@ export default function RichTextEditor({ value, onChange, placeholder, rows = 4 
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("underline"); }} style={btnStyle} title="Souligner">
           <span style={{ textDecoration: "underline" }}>S</span>
         </button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor("\u00B7"); }} style={{ ...btnStyle, fontSize: "18px", fontWeight: 800 }} title="Point median (ex: un·e)">
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor("\u00B7"); }} style={{ ...btnStyle, fontSize: "18px", fontWeight: 800 }} title="Point médian (ex: un·e)">
           ·
+        </button>
+
+        <div style={separatorStyle} />
+
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); insertLink(); }} style={{ ...btnStyle, color: "var(--canard)" }} title="Insérer un lien (ouvre dans un nouvel onglet)">
+          🔗 Lien
+        </button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); removeLink(); }} style={{ ...btnStyle, color: "var(--muted)", fontSize: "11px" }} title="Supprimer le lien">
+          ✕ Lien
         </button>
 
         <div style={separatorStyle} />
@@ -183,6 +215,10 @@ export default function RichTextEditor({ value, onChange, placeholder, rows = 4 
           color: var(--muted);
           font-style: italic;
           pointer-events: none;
+        }
+        [contenteditable] a {
+          color: var(--canard);
+          text-decoration: underline;
         }
       `}</style>
     </div>
