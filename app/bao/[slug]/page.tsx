@@ -54,6 +54,14 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
         const prof = await getProfileByUserId(session.user.id);
         if (prof?.is_admin) setIsAdmin(true);
       }
+      // Enregistrer la consultation
+      if (f && session?.user) {
+        supabase.from("consultations").insert({
+          user_id: session.user.id,
+          fiche_id: f.id,
+          consulted_at: new Date().toISOString(),
+        }).then(() => {});
+      }
       setLoading(false);
     }
     load();

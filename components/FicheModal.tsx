@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import type { Fiche, Cle, Etape, Objectif } from "@/lib/supabase";
 import { formatDuree, slugify } from "@/lib/supabase";
 import RetoursSection from "@/components/RetoursSection";
@@ -26,6 +28,16 @@ function parseJSON(val: any): any {
 }
 
 export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmin, objectifsBao }: FicheModalProps) {
+  // Enregistrer la consultation à l'ouverture de la modale
+  useEffect(() => {
+    if (userId && fiche?.id) {
+      supabase.from("consultations").insert({
+        user_id: userId,
+        fiche_id: fiche.id,
+        consulted_at: new Date().toISOString(),
+      }).then(() => {});
+    }
+  }, [userId, fiche?.id]);
   const duree = formatDuree(fiche);
   const stepColor = etape?.couleur_hex || "var(--canard)";
   const objectifs = parseJSON(fiche.objectifs);
