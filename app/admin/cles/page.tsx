@@ -12,6 +12,7 @@ export default function AdminClesPage() {
   // Form fields
   const [code, setCode] = useState("");
   const [nom, setNom] = useState("");
+  const [emoji, setEmoji] = useState("");
   const [description, setDescription] = useState("");
   const [descriptionLongue, setDescriptionLongue] = useState("");
   const [couleurHex, setCouleurHex] = useState("#00989D");
@@ -28,7 +29,7 @@ export default function AdminClesPage() {
   }
 
   function resetForm() {
-    setCode(""); setNom(""); setDescription(""); setDescriptionLongue(""); setCouleurHex("#00989D"); setOrdre(0);
+    setCode(""); setNom(""); setEmoji(""); setDescription(""); setDescriptionLongue(""); setCouleurHex("#00989D"); setOrdre(0);
     setEditId(null); setShowNew(false); setError("");
   }
 
@@ -37,6 +38,7 @@ export default function AdminClesPage() {
     setShowNew(false);
     setCode(cle.code || "");
     setNom(cle.nom || "");
+    setEmoji((cle as any).emoji || "");
     setDescription(cle.description || "");
     setDescriptionLongue(cle.description_longue || "");
     setCouleurHex(cle.couleur_hex || "#00989D");
@@ -53,7 +55,15 @@ export default function AdminClesPage() {
     if (!nom.trim()) { setError("Le nom est obligatoire."); return; }
     setSaving(true); setError("");
 
-    const data = { code: code || nom.substring(0, 3).toUpperCase(), nom, description: description || null, description_longue: descriptionLongue || null, couleur_hex: couleurHex, ordre };
+    const data = {
+      code: code || nom.substring(0, 3).toUpperCase(),
+      nom,
+      emoji: emoji || null,
+      description: description || null,
+      description_longue: descriptionLongue || null,
+      couleur_hex: couleurHex,
+      ordre,
+    };
 
     if (editId) {
       const { error: err } = await supabase.from("cles").update(data).eq("id", editId);
@@ -95,10 +105,14 @@ export default function AdminClesPage() {
       {isEditing && (
         <div style={{ background: "white", border: "2px solid var(--canard)", borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
           <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "16px" }}>{editId ? "Modifier la clé" : "Nouvelle clé"}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px 80px", gap: "12px", marginBottom: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 1fr 100px 80px", gap: "12px", marginBottom: "12px" }}>
             <div>
               <label style={labelStyle}>Nom *</label>
               <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex: Sens" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Emoji</label>
+              <input type="text" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="🧭" style={{ ...inputStyle, fontSize: "24px", textAlign: "center", padding: "4px" }} maxLength={4} />
             </div>
             <div>
               <label style={labelStyle}>Code</label>
@@ -141,6 +155,7 @@ export default function AdminClesPage() {
           {cles.map((cle) => (
             <div key={cle.id} style={{ background: "white", border: "2px solid var(--line)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "14px" }}>
               <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: cle.couleur_hex || "var(--canard)", flexShrink: 0 }} />
+              <span style={{ fontSize: "22px", flexShrink: 0, minWidth: "28px", textAlign: "center" }}>{(cle as any).emoji || ""}</span>
               <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--muted)", minWidth: "40px" }}>{cle.code}</span>
               <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--anthracite)", flexGrow: 1 }}>{cle.nom}</span>
               {cle.description && <span style={{ fontSize: "12px", color: "var(--muted)", flexGrow: 2 }}>{cle.description}</span>}
