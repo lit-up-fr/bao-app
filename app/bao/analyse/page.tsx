@@ -429,6 +429,24 @@ Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce fo
           </p>
         </div>
 
+        {/* Bandeau intro : outils de diagnostic */}
+        <div style={{ background: "#f0fafa", border: "2px solid var(--line)", borderRadius: "16px", padding: "20px 24px", marginBottom: "28px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "10px" }}>
+            Pour analyser les résultats, il faut avoir au préalable réalisé un diagnostic de la motivation grâce à l&apos;un de ces outils.
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <Link href="/bao/debriefing-d-atelier-avec-les-cles-de-la-motivation" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              🎯 Débriefing en collectif
+            </Link>
+            <Link href="/bao/questionnaire-post-atelier-barometre-de-la-motivation" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              📋 Questionnaire
+            </Link>
+            <Link href="/bao/entretien-individuel-cles-dengagement" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              💬 Entretien individuel
+            </Link>
+          </div>
+        </div>
+
         {/* Stepper */}
         <div style={{ display: "flex", gap: "4px", marginBottom: "32px" }}>
           {[1, 2, 3].map((s) => (
