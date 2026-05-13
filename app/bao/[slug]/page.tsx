@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { getProfileByUserId } from "@/lib/auth";
 import AppHeader from "@/components/AppHeader";
+import { generateFichePdf } from "@/lib/generateFichePdf";
 import RetoursSection from "@/components/RetoursSection";
 
 function parseJSON(val: any): any {
@@ -379,19 +380,17 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           </div>
         )}
 
-        {/* PDF principal */}
-        {pdfUrl && (
-          <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" style={{
-              padding: "11px 20px", border: "2px solid var(--canard)", background: "var(--canard)", color: "white",
-              fontFamily: "inherit", fontSize: "13px", fontWeight: 700, cursor: "pointer", borderRadius: "24px",
-              transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: "8px",
-              letterSpacing: "0.02em", textDecoration: "none",
-            }}>
-              ↓ Télécharger la fiche PDF
-            </a>
-          </div>
-        )}
+        {/* PDF */}
+        <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button onClick={() => generateFichePdf({ ...fiche, cles: cles.map(c => ({ nom: c.nom, emoji: (c as any).emoji })) })} style={{
+            padding: "11px 20px", border: "2px solid var(--canard)", background: "var(--canard)", color: "white",
+            fontFamily: "inherit", fontSize: "13px", fontWeight: 700, cursor: "pointer", borderRadius: "24px",
+            transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: "8px",
+            letterSpacing: "0.02em",
+          }}>
+            ↓ Télécharger la fiche PDF
+          </button>
+        </div>
 
         {/* Source */}
         {fiche.source && (

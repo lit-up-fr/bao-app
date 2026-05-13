@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Fiche, Cle, Etape, Objectif } from "@/lib/supabase";
 import { formatDuree, slugify } from "@/lib/supabase";
+import { generateFichePdf } from "@/lib/generateFichePdf";
 import RetoursSection from "@/components/RetoursSection";
 import Link from "next/link";
 
