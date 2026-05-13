@@ -283,7 +283,16 @@ export default function RetoursSection({ ficheId, userId, isAdmin }: RetoursSect
               >
                 {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
-                  <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {/* Avatar */}
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", overflow: "hidden", background: profile?.avatar_url ? "transparent" : "var(--canard-dark)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "2px solid var(--line)" }}>
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="white" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="white" opacity="0.6" /></svg>
+                      )}
+                    </div>
+                    <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)" }}>
                         {profile?.prenom} {profile?.nom?.charAt(0)}.
@@ -293,12 +302,18 @@ export default function RetoursSection({ ficheId, userId, isAdmin }: RetoursSect
                           {profile.structure}
                         </span>
                       )}
+                      {profile?.poste && (
+                        <span style={{ fontSize: "11px", color: "#b0b0b0", fontStyle: "italic" }}>
+                          ({profile.poste})
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
                       {r.note && <StarRating value={r.note} readonly size={14} />}
                       <span style={{ fontSize: "12px", color: "var(--muted)" }}>
                         {timeAgo(r.created_at)}
                       </span>
+                    </div>
                     </div>
                   </div>
                   {(isOwn || isAdmin) && (

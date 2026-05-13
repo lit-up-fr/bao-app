@@ -14,16 +14,26 @@ interface AppHeaderProps {
 export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: AppHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [initials, setInitials] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    async function checkAdmin() {
+    async function checkUser() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        setIsLoggedIn(true);
         const profile = await getProfileByUserId(session.user.id);
         if (profile?.is_admin) setIsAdmin(true);
+        if (profile) {
+          setAvatarUrl((profile as any).avatar_url || null);
+          const first = profile.prenom?.[0]?.toUpperCase() || "";
+          const last = profile.nom?.[0]?.toUpperCase() || "";
+          setInitials(first + last || "?");
+        }
       }
     }
-    checkAdmin();
+    checkUser();
   }, []);
 
   return (
@@ -103,7 +113,7 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
             </Link>
 
             {/* Mobile nav links */}
-            <div style={{ display: "flex", gap: "12px", marginLeft: "auto", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "10px", marginLeft: "auto", alignItems: "center" }}>
               <Link
                 href="/proposer"
                 style={{
@@ -118,20 +128,29 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
               >
                 +
               </Link>
-              <Link
-                href="/mon-espace"
-                style={{
-                  color: "white",
-                  textDecoration: "none",
-                  background: "var(--canard-dark)",
-                  padding: "4px 10px",
-                  borderRadius: "14px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                }}
-              >
-                ⭐
-              </Link>
+              {/* Avatar mobile */}
+              {isLoggedIn ? (
+                <Link href="/mon-espace" style={{ textDecoration: "none" }}>
+                  <div style={{
+                    width: "30px", height: "30px", borderRadius: "50%", overflow: "hidden",
+                    background: avatarUrl ? "transparent" : "var(--canard-dark)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    border: "2px solid var(--canard)",
+                  }}>
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="white" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="white" opacity="0.6" /></svg>
+                    )}
+                  </div>
+                </Link>
+              ) : (
+                <Link href="/mon-espace" style={{
+                  color: "white", textDecoration: "none", background: "var(--canard-dark)",
+                  padding: "4px 10px", borderRadius: "14px", fontSize: "12px", fontWeight: 600,
+                }}>⭐</Link>
+              )}
               {isAdmin && (
                 <Link
                   href="/admin"
@@ -246,18 +265,22 @@ export default function AppHeader({ searchQuery, onSearchChange, onOpenGuide }: 
             >
               + Proposer un outil
             </Link>
-            <Link
-              href="/mon-espace"
-              style={{
-                color: "white",
-                textDecoration: "none",
-                background: "var(--canard-dark)",
-                padding: "6px 14px",
-                borderRadius: "18px",
-                fontSize: "13px",
-              }}
-            >
-              Mon espace
+            {/* Avatar desktop */}
+            <Link href="/mon-espace" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{
+                width: "34px", height: "34px", borderRadius: "50%", overflow: "hidden",
+                background: avatarUrl ? "transparent" : "var(--canard-dark)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "2.5px solid var(--canard)",
+                transition: "border-color 0.2s",
+              }}>
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="white" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="white" opacity="0.6" /></svg>
+                )}
+              </div>
             </Link>
             {isAdmin && (
               <Link

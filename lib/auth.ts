@@ -261,13 +261,15 @@ export interface Retour {
     nom: string;
     structure: string | null;
     categorie_pro: string | null;
+    poste: string | null;
+    avatar_url: string | null;
   };
 }
 
 export async function getRetoursByFiche(ficheId: string): Promise<Retour[]> {
   const { data, error } = await supabase
     .from("retours")
-    .select("*, profile:profiles(prenom, nom, structure, categorie_pro)")
+    .select("*, profile:profiles(prenom, nom, structure, categorie_pro, poste, avatar_url)")
     .eq("fiche_id", ficheId)
     .order("created_at", { ascending: false });
 
@@ -287,7 +289,7 @@ export async function createRetour(
   const { data, error } = await supabase
     .from("retours")
     .insert({ fiche_id: ficheId, user_id: userId, contenu, note })
-    .select("*, profile:profiles(prenom, nom, structure, categorie_pro)")
+    .select("*, profile:profiles(prenom, nom, structure, categorie_pro, poste, avatar_url)")
     .single();
 
   if (error) throw error;
@@ -347,6 +349,8 @@ export interface Proposition {
     nom: string;
     structure: string | null;
     categorie_pro: string | null;
+    poste: string | null;
+    avatar_url: string | null;
   };
 }
 
@@ -387,7 +391,7 @@ export async function getMyPropositions(userId: string): Promise<Proposition[]> 
 export async function getAllPropositions(): Promise<Proposition[]> {
   const { data, error } = await supabase
     .from("propositions")
-    .select("*, profile:profiles(prenom, nom, structure, categorie_pro)")
+    .select("*, profile:profiles(prenom, nom, structure, categorie_pro, poste, avatar_url)")
     .order("created_at", { ascending: false });
 
   if (error) {
