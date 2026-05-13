@@ -44,7 +44,7 @@ export default function AdminObjectifsPage() {
     setObjectifs(
       (objData || []).map((o: any) => ({ ...o, ficheCount: countMap[o.id] || 0 }))
     );
-    setFiches(fichesData || []);
+    setFiches((fichesData || []) as any);
     setLoading(false);
   }
 
