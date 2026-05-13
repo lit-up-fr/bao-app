@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface WelcomeModalProps {
   onClose: () => void;
@@ -10,30 +11,63 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
   const [step, setStep] = useState(0);
 
   const slides = [
-    // Slide 1 : Introduction
+    // Slide 0 : Philosophie BAO
+    <div key="philo" style={{ textAlign: "center", padding: "10px 0" }}>
+      <div style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--canard)", marginBottom: "8px" }}>
+        Bienvenue !
+      </div>
+      <h2 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", lineHeight: 1.2, marginBottom: "16px" }}>
+        La Boîte à Outils{" "}
+        <span style={{ color: "var(--canard)" }}>Lit uP</span>
+      </h2>
+      <div style={{ textAlign: "left", fontSize: "15px", color: "var(--anthracite)", lineHeight: 1.7, marginBottom: "20px" }}>
+        <p style={{ marginBottom: "12px" }}>
+          🚀 L'objectif de cette BAO est de diffuser largement des outils pédagogiques (créés par Lit uP ou identifiés comme pertinents) et de permettre aux professionnels de l'éducation et de l'insertion de partager entre eux des ressources efficaces pour engager les jeunes dans leurs parcours, développer leur confiance en eux et en leur capacité à réussir.
+        </p>
+        <p style={{ marginBottom: "12px" }}>
+          Nous sommes persuadés que la force de notre communauté éducative réside à la fois dans l'engagement de chacun, et dans l'échange et la mutualisation de nos idées et ressources.
+        </p>
+        <p style={{ marginBottom: "12px" }}>
+          💸 L'accès à la BAO est <strong>gratuit</strong>, illimité dans le temps, partageable à tout acteur de l'éducation intéressé, et nous souhaitons que cela reste ainsi !
+        </p>
+      </div>
+      <div style={{ background: "#e0f3f4", borderRadius: "14px", padding: "18px 20px", textAlign: "left" }}>
+        <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--canard-dark)", marginBottom: "10px" }}>
+          🙌 Nous comptons sur vous pour contribuer !
+        </div>
+        <div style={{ fontSize: "13px", color: "var(--anthracite)", lineHeight: 1.6 }}>
+          <div style={{ marginBottom: "4px" }}>1. Envoyez vos commentaires à la lecture des déroulés</div>
+          <div style={{ marginBottom: "4px" }}>2. Partagez vos retours d'expérience après utilisation</div>
+          <div style={{ marginBottom: "4px" }}>3. Proposez des outils qui vous semblent pertinents</div>
+          <div>4. Partagez la BAO à vos collègues</div>
+        </div>
+      </div>
+    </div>,
+
+    // Slide 1 : Comment utiliser la BAO
     <div key="intro" style={{ textAlign: "center", padding: "10px 0" }}>
       <div style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--canard)", marginBottom: "8px" }}>
         01 — Comment utiliser cette boîte ?
       </div>
       <h2 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", lineHeight: 1.2, marginBottom: "16px" }}>
-        30 outils, organisés selon{" "}
+        40 outils, organisés selon{" "}
         <span style={{ color: "var(--canard)" }}>deux logiques complémentaires</span>.
       </h2>
       <p style={{ fontSize: "15px", color: "var(--anthracite)", lineHeight: 1.6, marginBottom: "24px" }}>
-        Vous allez pouvoir chercher un outil de deux façons :
+        Vous pouvez chercher un outil de deux façons :
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "left" }}>
+      <div className="welcome-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "left" }}>
         <div style={{ background: "#e0f3f4", borderRadius: "14px", padding: "20px" }}>
           <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--canard-dark)", marginBottom: "8px" }}>
-            ① Par étape du parcours
+            ① Par objectif
           </div>
           <p style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, margin: 0 }}>
-            Où en êtes-vous avec votre groupe ? Vous <strong>démarrez</strong> ? Vous êtes <strong>en phase d'idéation</strong> ? Vous <strong>débriefez</strong> ?
+            Que souhaitez-vous faire ? <strong>Cadrer</strong> votre groupe, renforcer la <strong>cohésion</strong>, favoriser l'<strong>expression</strong>, travailler la <strong>connaissance de soi</strong>, lancer des <strong>projets</strong>, faire un <strong>bilan</strong>…
           </p>
         </div>
         <div style={{ background: "#fff7df", borderRadius: "14px", padding: "20px" }}>
           <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--jaune-accent)", marginBottom: "8px" }}>
-            ② Par clé d'engagement
+            ② Par clé de motivation
           </div>
           <p style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.5, margin: 0 }}>
             Qu'est-ce que vous cherchez à activer chez les jeunes ? Le <strong>sens</strong>, le <strong>plaisir</strong>, la <strong>sécurité</strong>, le <strong>pouvoir d'agir</strong>… ?
@@ -41,60 +75,23 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
         </div>
       </div>
       <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: "20px" }}>
-        On vous explique les deux logiques juste après.
+        Vous pouvez aussi utiliser le <strong>diagnostic</strong> pour identifier les leviers de motivation de votre groupe et trouver les outils adaptés.
       </p>
     </div>,
 
-    // Slide 2 : Les étapes du parcours
-    <div key="etapes" style={{ padding: "10px 0" }}>
-      <div style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--canard)", marginBottom: "8px" }}>
-        02 — Logique n°1
-      </div>
-      <h2 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", lineHeight: 1.2, marginBottom: "12px" }}>
-        Les 10 étapes{" "}
-        <span style={{ color: "var(--canard)" }}>du travail collaboratif</span>
-      </h2>
-      <p style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.6, marginBottom: "20px" }}>
-        Tout accompagnement collectif suit un cycle : on commence par <strong>accueillir et créer la confiance</strong>, on <strong>explore le sujet</strong> en plusieurs phases, puis on <strong>prend du recul ensemble</strong> pour apprendre de l'expérience.
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {[
-          { code: "A", nom: "Cadrage / Connexion", desc: "Créer le cadre du travail ensemble et permettre aux participant·es de se connecter les un·es aux autres.", color: "#00989D" },
-          { code: "B1", nom: "Analyse", desc: "Analyser une situation, un problème, un contexte pour le comprendre en profondeur.", color: "#2B3442" },
-          { code: "B2", nom: "Problématisation", desc: "Formuler le bon problème à résoudre.", color: "#6B2468" },
-          { code: "B3", nom: "Idéation", desc: "Générer un maximum d'idées, sans filtre, pour ouvrir le champ des possibles.", color: "#E67E22" },
-          { code: "B4", nom: "Priorisation", desc: "Trier les idées pour en retenir quelques-unes sur lesquelles avancer.", color: "#00989D" },
-          { code: "B5", nom: "Construction", desc: "Construire, prototyper, donner forme à une idée retenue.", color: "#6B2468" },
-          { code: "B6", nom: "Test", desc: "Tester, expérimenter pour valider ou ajuster.", color: "#2B3442" },
-          { code: "B7", nom: "Évaluation", desc: "Mesurer les résultats, tirer des enseignements.", color: "#2B3442" },
-          { code: "C", nom: "Débriefing", desc: "Prendre du recul sur ce qui vient d'être vécu.", color: "#00989D" },
-        ].map((e) => (
-          <div key={e.code} style={{ display: "flex", alignItems: "center", gap: "12px", background: "#f8f9fa", borderRadius: "10px", padding: "10px 14px" }}>
-            <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: e.color, color: "white", fontWeight: 800, fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {e.code}
-            </span>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)" }}>{e.nom}</span>
-              <span style={{ fontSize: "13px", color: "var(--muted)", marginLeft: "8px" }}>{e.desc}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>,
-
-    // Slide 3 : Les clés d'engagement
+    // Slide 2 : Les 9 clés d'engagement
     <div key="cles" style={{ padding: "10px 0" }}>
       <div style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--canard)", marginBottom: "8px" }}>
-        03 — Logique n°2
+        02 — Le cadre scientifique
       </div>
       <h2 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", lineHeight: 1.2, marginBottom: "12px" }}>
         Les 9 clés{" "}
-        <span style={{ color: "var(--canard)" }}>de l'engagement</span>
+        <span style={{ color: "var(--canard)" }}>de la motivation</span>
       </h2>
       <p style={{ fontSize: "14px", color: "var(--anthracite)", lineHeight: 1.6, marginBottom: "24px" }}>
-        L'engagement repose sur la satisfaction de <strong>3 besoins psychologiques fondamentaux</strong>. Chaque besoin se décline en 3 clés concrètes à activer.
+        La motivation repose sur la satisfaction de <strong>3 besoins psychologiques fondamentaux</strong> (théorie de l'autodétermination, Deci &amp; Ryan). Chaque besoin se décline en 3 clés concrètes à activer.
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+      <div className="welcome-grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
         {/* Autonomie */}
         <div style={{ borderRadius: "14px", border: "2px solid #E67E22", overflow: "hidden" }}>
           <div style={{ height: "4px", background: "#E67E22" }} />
@@ -102,9 +99,9 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--anthracite)", marginBottom: "6px" }}>Autonomie</h3>
             <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px", lineHeight: 1.4 }}>Le besoin de se sentir à l'origine de ses choix</p>
             {[
-              { nom: "Sens", desc: "Comprendre pourquoi on fait ce qu'on fait." },
-              { nom: "Liberté", desc: "Avoir le choix, pouvoir décider." },
-              { nom: "Plaisir", desc: "Prendre plaisir à apprendre, à être ensemble." },
+              { nom: "🧭 Sens", desc: "Comprendre pourquoi on fait ce qu'on fait." },
+              { nom: "🕊️ Liberté", desc: "Avoir le choix, pouvoir décider." },
+              { nom: "🎉 Plaisir", desc: "Prendre plaisir à apprendre, à être ensemble." },
             ].map((c) => (
               <div key={c.nom} style={{ marginBottom: "10px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#E67E22" }}>{c.nom}</div>
@@ -121,9 +118,9 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--anthracite)", marginBottom: "6px" }}>Compétence</h3>
             <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px", lineHeight: 1.4 }}>Le besoin de se sentir capable, de progresser</p>
             {[
-              { nom: "Action", desc: "Apprendre en faisant, en expérimentant." },
-              { nom: "Progression", desc: "Voir qu'on avance, qu'on progresse." },
-              { nom: "Utilité", desc: "Se sentir utile, contribuer au collectif." },
+              { nom: "⚡ Action", desc: "Apprendre en faisant, en expérimentant." },
+              { nom: "📈 Progression", desc: "Voir qu'on avance, qu'on progresse." },
+              { nom: "🎯 Utilité", desc: "Se sentir utile, contribuer au collectif." },
             ].map((c) => (
               <div key={c.nom} style={{ marginBottom: "10px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#00989D" }}>{c.nom}</div>
@@ -140,9 +137,9 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--anthracite)", marginBottom: "6px" }}>Appartenance</h3>
             <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px", lineHeight: 1.4 }}>Le besoin de faire partie d'un groupe, en sécurité</p>
             {[
-              { nom: "Sécurité", desc: "Se sentir en sécurité pour oser." },
-              { nom: "Considération", desc: "Être reconnu·e dans son unicité." },
-              { nom: "Confiance", desc: "Faire partie d'un collectif, partager des objectifs communs." },
+              { nom: "🌿 Sécurité", desc: "Se sentir en sécurité pour oser." },
+              { nom: "💎 Considération", desc: "Être reconnu·e dans son unicité." },
+              { nom: "🤝 Confiance", desc: "Faire partie d'un collectif, partager des objectifs communs." },
             ].map((c) => (
               <div key={c.nom} style={{ marginBottom: "10px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#6B2468" }}>{c.nom}</div>
@@ -152,6 +149,46 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
           </div>
         </div>
       </div>
+    </div>,
+
+    // Slide 3 : Le diagnostic
+    <div key="diagnostic" style={{ textAlign: "center", padding: "10px 0" }}>
+      <div style={{ fontFamily: "'Caveat', cursive", fontSize: "18px", color: "var(--canard)", marginBottom: "8px" }}>
+        03 — Le diagnostic
+      </div>
+      <h2 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", lineHeight: 1.2, marginBottom: "16px" }}>
+        Diagnostiquer la motivation{" "}
+        <span style={{ color: "var(--canard)" }}>de votre groupe</span>
+      </h2>
+      <p style={{ fontSize: "15px", color: "var(--anthracite)", lineHeight: 1.6, marginBottom: "24px" }}>
+        Utilisez le bouton 🔍 <strong>Diagnostic</strong> en haut de la BAO pour accéder à 3 outils complémentaires :
+      </p>
+      <div className="welcome-grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", textAlign: "left" }}>
+        <div style={{ background: "#f8f9fa", borderRadius: "14px", padding: "20px", textAlign: "center" }}>
+          <span style={{ fontSize: "32px", display: "block", marginBottom: "10px" }}>🧭</span>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "6px" }}>Faire le diagnostic</div>
+          <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4, margin: 0 }}>
+            Utilisez un outil (jetons, gommettes, questionnaire) pour recueillir l'avis des jeunes sur chaque clé
+          </p>
+        </div>
+        <div style={{ background: "#f8f9fa", borderRadius: "14px", padding: "20px", textAlign: "center" }}>
+          <span style={{ fontSize: "32px", display: "block", marginBottom: "10px" }}>📊</span>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "6px" }}>Analyser les résultats</div>
+          <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4, margin: 0 }}>
+            Saisissez vos données et obtenez un radar, des alertes et une synthèse automatique
+          </p>
+        </div>
+        <div style={{ background: "#f8f9fa", borderRadius: "14px", padding: "20px", textAlign: "center" }}>
+          <span style={{ fontSize: "32px", display: "block", marginBottom: "10px" }}>🔑</span>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "6px" }}>Trouver les bons outils</div>
+          <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4, margin: 0 }}>
+            La BAO filtre automatiquement les outils adaptés aux clés à renforcer
+          </p>
+        </div>
+      </div>
+      <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: "20px" }}>
+        Vos analyses sont sauvegardées dans <strong>Mon espace</strong> pour suivre l'évolution de vos groupes dans le temps.
+      </p>
     </div>,
   ];
 
@@ -232,7 +269,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
           </button>
 
           {/* Content */}
-          <div className={step === 2 ? "welcome-grid-3" : step === 0 ? "welcome-grid-2" : ""}>
+          <div className={step === 2 ? "welcome-grid-3" : step === 1 ? "welcome-grid-2" : ""}>
             {slides[step]}
           </div>
 
