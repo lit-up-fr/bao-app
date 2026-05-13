@@ -1,6 +1,8 @@
 export async function generateFichePdf(fiche: any, cles?: { nom: string; emoji?: string }[]) {
   // @ts-ignore
+  console.log("PDF generation started", fiche.nom);
   const html2pdf = (await import("html2pdf.js")).default;
+  console.log("html2pdf loaded", html2pdf);
 
   const duree = fiche.duree_libre || (fiche.duree_min && fiche.duree_max && fiche.duree_min !== fiche.duree_max
     ? `${fiche.duree_min} min – ${fiche.duree_max} min`

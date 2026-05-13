@@ -498,11 +498,8 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
 
         {/* CTA buttons */}
         <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {pdfUrl && (
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+          <div role="button" tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); generateFichePdf(fiche, cles.map((c: any) => ({ nom: c.nom, emoji: c.emoji }))); }}
               style={{
                 padding: "11px 20px",
                 border: "2px solid var(--canard)",
@@ -518,12 +515,10 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
                 alignItems: "center",
                 gap: "8px",
                 letterSpacing: "0.02em",
-                textDecoration: "none",
               }}
             >
               ↓ Télécharger la fiche PDF
-            </a>
-          )}
+            </div>
         </div>
 
         {/* Source */}
