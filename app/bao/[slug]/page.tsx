@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   getFicheBySlug,
@@ -31,6 +32,8 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
   const [objectifsBao, setObjectifsBao] = useState<Objectif[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -84,7 +87,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
         <AppHeader searchQuery="" onSearchChange={() => {}} />
         <div style={{ maxWidth: "760px", margin: "0 auto", padding: "80px 28px", textAlign: "center" }}>
           <h1 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", marginBottom: "12px" }}>Fiche introuvable</h1>
-          <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontWeight: 600 }}>Retour aux outils</Link>
+          <button onClick={() => window.location.href = new URLSearchParams(window.location.search).get("from") === "analyse" ? "/bao/analyse" : "/bao"} style={{ color: "var(--canard)", textDecoration: "none", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, fontSize: "inherit" }}>← Retour</button>
         </div>
       </div>
     );
@@ -114,9 +117,9 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
       <div className="fiche-content" style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 28px 80px" }}>
         {/* Back link + Edit button */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            ← Retour aux outils
-          </Link>
+          <button onClick={() => { const from = new URLSearchParams(window.location.search).get("from"); window.location.href = from === "analyse" ? "/bao/analyse" : "/bao"; }} style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
+            ← Retour
+          </button>
           {isAdmin && (
             <Link
               href={`/admin/fiches/${fiche.id}/edit`}

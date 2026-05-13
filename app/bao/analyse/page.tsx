@@ -416,9 +416,9 @@ Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce fo
       <AppHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       <div className="fiche-content" style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 28px 80px" }}>
-        <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px", marginBottom: "28px" }}>
-          ← Retour aux outils
-        </Link>
+        <button onClick={() => window.history.back()} style={{ color: "var(--canard)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px", marginBottom: "28px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
+          ← Retour
+        </button>
 
         <div style={{ marginBottom: "32px" }}>
           <h1 style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, color: "var(--anthracite)", margin: "0 0 8px" }}>
@@ -435,13 +435,13 @@ Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce fo
             Pour analyser les résultats, il faut avoir au préalable réalisé un diagnostic de la motivation grâce à l&apos;un de ces outils.
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Link href="/bao/debriefing-d-atelier-avec-les-cles-de-la-motivation" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <Link href="/bao/debriefing-d-atelier-avec-les-cles-de-la-motivation?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
               🎯 Débriefing en collectif
             </Link>
-            <Link href="/bao/questionnaire-post-atelier-barometre-de-la-motivation" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <Link href="/bao/questionnaire-post-atelier-barometre-de-la-motivation?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
               📋 Questionnaire
             </Link>
-            <Link href="/bao/entretien-individuel-cles-dengagement" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <Link href="/bao/entretien-individuel-cles-dengagement?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
               💬 Entretien individuel
             </Link>
           </div>
