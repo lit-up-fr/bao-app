@@ -430,20 +430,62 @@ Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce fo
         </div>
 
         {/* Bandeau intro : outils de diagnostic */}
-        <div style={{ background: "#f0fafa", border: "2px solid var(--line)", borderRadius: "16px", padding: "20px 24px", marginBottom: "28px" }}>
-          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "10px" }}>
+        <div style={{ marginBottom: "28px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--anthracite)", marginBottom: "16px" }}>
             Pour analyser les résultats, il faut avoir au préalable réalisé un diagnostic de la motivation grâce à l&apos;un de ces outils.
           </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Link href="/bao/debriefing-d-atelier-avec-les-cles-de-la-motivation?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              🎯 Débriefing en collectif
-            </Link>
-            <Link href="/bao/questionnaire-post-atelier-barometre-de-la-motivation?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              📋 Questionnaire
-            </Link>
-            <Link href="/bao/entretien-individuel-cles-dengagement?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              💬 Entretien individuel
-            </Link>
+
+          {/* Bloc bleu : Diagnostic AVEC les jeunes */}
+          <div style={{ background: "#f0fafa", border: "2px solid #00989D", borderRadius: "16px", padding: "20px 24px", marginBottom: "16px" }}>
+            <div style={{ fontSize: "14px", fontWeight: 800, color: "#00989D", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              👥 Diagnostic AVEC les jeunes
+            </div>
+            <div style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "12px" }}>
+              Recueillir leur ressenti directement, c&apos;est le plus pertinent et le plus fiable.
+            </div>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Link href="/bao/debriefing-d-atelier-avec-les-cles-de-la-motivation?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                🎯 Débriefing en collectif
+              </Link>
+              <Link href="/bao/questionnaire-post-atelier-barometre-de-la-motivation?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                📋 Questionnaire
+              </Link>
+              <Link href="/bao/entretien-individuel-cles-dengagement?from=analyse" style={{ fontSize: "13px", fontWeight: 600, color: "var(--canard)", textDecoration: "none", padding: "8px 14px", background: "white", borderRadius: "10px", border: "1.5px solid var(--line)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                💬 Entretien individuel
+              </Link>
+            </div>
+          </div>
+
+          {/* Bloc violet : Auto-diagnostic */}
+          <div style={{ background: "#f7f0f7", border: "2px solid #6B2468", borderRadius: "16px", padding: "20px 24px" }}>
+            <div style={{ fontSize: "14px", fontWeight: 800, color: "#6B2468", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              📋 Auto-diagnostic
+            </div>
+            <div style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "12px" }}>
+              Trouver des premières pistes, avant de solliciter les jeunes directement, à partir de tes propres observations.
+            </div>
+            <button
+              onClick={() => alert("🚧 Cette fonctionnalité est en cours de développement.\n\nElle te permettra bientôt de trouver des premières pistes à partir de tes propres observations, avant de solliciter les jeunes directement.")}
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#9ca3af",
+                padding: "8px 14px",
+                background: "#f3f4f6",
+                borderRadius: "10px",
+                border: "1.5px dashed #d1d5db",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              📋 Auto-diagnostic du pro
+              <span style={{ fontSize: "10px", fontWeight: 700, background: "#6B2468", color: "white", padding: "2px 6px", borderRadius: "6px", marginLeft: "4px" }}>
+                EN COURS
+              </span>
+            </button>
           </div>
         </div>
 

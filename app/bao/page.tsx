@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   getFiches,
   getCles,
@@ -33,6 +33,7 @@ type ViewMode = "objectifs" | "cles";
 
 export default function BaoPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [fiches, setFiches] = useState<FicheWithMeta[]>([]);
   const [cles, setCles] = useState<Cle[]>([]);
   const [etapes, setEtapes] = useState<Etape[]>([]);
@@ -158,11 +159,13 @@ export default function BaoPage() {
   }, [activeObjectifIds, objectifsFichesMap]);
 
   /* ── Diagnostic overlay actions ── */
+  /** Choix "Faire le diagnostic" : redirige directement vers /bao/diagnostiquer
+   *  qui présente les 3 outils + l'auto-diag en grille 2×2 avec leur contexte d'usage.
+   *  (La modale intermédiaire "Avec les jeunes / Auto-diagnostic" a été supprimée :
+   *   elle était redondante avec la grille de la nouvelle page.) */
   const handleDiagFaireLeTest = () => {
-    const obj1 = objectifs.find((o) => o.ordre === 1);
-    if (obj1) setActiveObjectif(obj1);
-    setViewMode("objectifs");
     setShowDiagnosticOverlay(false);
+    router.push("/bao/diagnostiquer");
   };
   const handleDiagTrouverOutils = () => {
     setActiveObjectif(null);
@@ -329,31 +332,135 @@ export default function BaoPage() {
             </div>
 
             {viewMode === "objectifs" ? (
-              /* ── Cartes Objectifs ── */
-              <div className="bao-top-grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "10px", maxWidth: "1500px", margin: "0 auto" }}>
-                {objectifs.map((obj) => {
-                  const isActive = activeObjectif?.id === obj.id;
-                  const count = fichesCountByObjectif[obj.id] || 0;
-                  return (
-                    <button key={obj.id} onClick={() => selectObjectif(obj)} style={{
-                      background: isActive ? "var(--canard)" : "white",
-                      color: isActive ? "white" : "var(--anthracite)",
-                      border: `2px solid ${isActive ? "var(--canard)" : "var(--line)"}`,
-                      borderRadius: "14px", padding: "14px 14px 12px", cursor: "pointer",
-                      textAlign: "center", fontFamily: "inherit", transition: "all 0.2s",
-                      position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
-                    }}
-                      onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f0fafa"; } }}
-                      onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; } }}
-                    >
-                      <span style={{ position: "absolute", top: "8px", right: "8px", background: isActive ? "white" : "var(--canard)", color: isActive ? "var(--canard)" : "white", fontSize: "10px", fontWeight: 700, width: "20px", height: "20px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
-                      <span style={{ fontSize: "28px", lineHeight: 1 }}>{obj.emoji || "📋"}</span>
-                      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.6 }}>{obj.mot_cle}</span>
-                      <span style={{ fontSize: "12px", fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{obj.nom}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              /* ── Objectif 1 (héro) + Objectifs 2-7 en grille ── */
+              (() => {
+                const obj1 = objectifs.find((o) => o.ordre === 1);
+                const autresObjs = objectifs.filter((o) => o.ordre !== 1);
+                const obj1Count = obj1 ? (fichesCountByObjectif[obj1.id] || 0) : 0;
+                const obj1Active = obj1 ? (activeObjectif?.id === obj1.id) : false;
+
+                return (
+                  <div style={{ maxWidth: "1500px", margin: "0 auto" }}>
+                    {/* 🎯 BLOC HERO : objectif 1 (diagnostic) */}
+                    {obj1 && (
+                      <button
+                        onClick={() => selectObjectif(obj1)}
+                        style={{
+                          width: "100%",
+                          background: obj1Active
+                            ? "linear-gradient(135deg, var(--canard) 0%, #007a7e 100%)"
+                            : "linear-gradient(135deg, var(--canard) 0%, #007a7e 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "16px",
+                          padding: "22px 28px",
+                          marginBottom: "14px",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          textAlign: "left",
+                          transition: "all 0.2s",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "20px",
+                          boxShadow: "0 4px 14px rgba(0, 152, 157, 0.2)",
+                          position: "relative",
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+                          (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(0, 152, 157, 0.28)";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                          (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(0, 152, 157, 0.2)";
+                        }}
+                      >
+                        <span style={{ fontSize: "52px", lineHeight: 1, flexShrink: 0 }}>{obj1.emoji || "🔍"}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1px", opacity: 0.85, marginBottom: "4px" }}>
+                            ÉTAPE 1 — POINT DE DÉPART
+                          </div>
+                          <div style={{ fontSize: "20px", fontWeight: 800, marginBottom: "4px", letterSpacing: "-0.01em" }}>
+                            {obj1.nom}
+                          </div>
+                          <div style={{ fontSize: "13px", opacity: 0.95, lineHeight: 1.4 }}>
+                            Avant tout, identifiez les leviers et freins de motivation de votre groupe. Toute la BAO s&apos;articule autour de ce diagnostic.
+                          </div>
+                        </div>
+                        <div style={{
+                          background: "white",
+                          color: "var(--canard)",
+                          padding: "10px 18px",
+                          borderRadius: "10px",
+                          fontSize: "14px",
+                          fontWeight: 800,
+                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {obj1Active ? "✓ Sélectionné" : "Diagnostiquer →"}
+                          {!obj1Active && (
+                            <span style={{
+                              background: "var(--canard)",
+                              color: "white",
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              padding: "2px 7px",
+                              borderRadius: "10px",
+                              minWidth: "20px",
+                              textAlign: "center",
+                            }}>{obj1Count}</span>
+                          )}
+                        </div>
+                      </button>
+                    )}
+
+                    {/* Séparateur "Ou explorez par objectif" */}
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "14px",
+                      margin: "14px 0 12px",
+                      color: "var(--muted)",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      letterSpacing: "1px",
+                      textTransform: "uppercase",
+                    }}>
+                      <div style={{ flex: 1, height: "1px", background: "var(--line)" }} />
+                      <span>Ou explorez par objectif</span>
+                      <div style={{ flex: 1, height: "1px", background: "var(--line)" }} />
+                    </div>
+
+                    {/* Grille des autres objectifs (2 à 7) */}
+                    <div className="bao-top-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${autresObjs.length}, 1fr)`, gap: "10px" }}>
+                      {autresObjs.map((obj) => {
+                        const isActive = activeObjectif?.id === obj.id;
+                        const count = fichesCountByObjectif[obj.id] || 0;
+                        return (
+                          <button key={obj.id} onClick={() => selectObjectif(obj)} style={{
+                            background: isActive ? "var(--canard)" : "white",
+                            color: isActive ? "white" : "var(--anthracite)",
+                            border: `2px solid ${isActive ? "var(--canard)" : "var(--line)"}`,
+                            borderRadius: "14px", padding: "14px 14px 12px", cursor: "pointer",
+                            textAlign: "center", fontFamily: "inherit", transition: "all 0.2s",
+                            position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
+                          }}
+                            onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--canard)"; (e.currentTarget as HTMLElement).style.background = "#f0fafa"; } }}
+                            onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; (e.currentTarget as HTMLElement).style.background = "white"; } }}
+                          >
+                            <span style={{ position: "absolute", top: "8px", right: "8px", background: isActive ? "white" : "var(--canard)", color: isActive ? "var(--canard)" : "white", fontSize: "10px", fontWeight: 700, width: "20px", height: "20px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+                            <span style={{ fontSize: "28px", lineHeight: 1 }}>{obj.emoji || "📋"}</span>
+                            <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.6 }}>{obj.mot_cle}</span>
+                            <span style={{ fontSize: "12px", fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{obj.nom}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()
             ) : (
               /* ── Cartes Clés de motivation ── */
               <div className="bao-top-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "10px", maxWidth: "1500px", margin: "0 auto" }}>
@@ -545,6 +652,7 @@ export default function BaoPage() {
             </div>
           </div>
         )}
+
       </div>
     </>
   );

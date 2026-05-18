@@ -37,8 +37,9 @@ interface AnalyseRow {
   nb_jeunes: number | null;
   type_eval: string | null;
   scores: Record<string, number>;
-  scores_detail: Record<string, Record<string, number>> | null;
+  scores_detail: Record<string, any> | null; // 🆕 plus tolérant pour gérer anciens formats {q1,q2,zone}
   alertes: string[] | null;
+  analysis_text?: string | null; // 🆕 texte de l'analyse IA pour diagnostic-pro
   created_at: string;
 }
 
@@ -387,6 +388,7 @@ function DashboardContent() {
                   : 0;
                 const forces = scoreEntries.filter(([, s]) => s >= 70).length;
                 const critiques = scoreEntries.filter(([, s]) => s < 30).length;
+                const isPro = a.type_eval === "diagnostic_pro"; // 🆕
 
                 return (
                   <div key={a.id} style={{
@@ -394,24 +396,46 @@ function DashboardContent() {
                     padding: "18px 20px", display: "flex", alignItems: "center", gap: "16px",
                     transition: "box-shadow 0.15s",
                   }}>
-                    <div style={{
-                      width: "48px", height: "48px", borderRadius: "50%", flexShrink: 0,
-                      background: avgScore >= 60 ? "#dcfce7" : avgScore >= 40 ? "#fef9c3" : "#fef2f2",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "16px", fontWeight: 800,
-                      color: avgScore >= 60 ? "#16a34a" : avgScore >= 40 ? "#ca8a04" : "#dc2626",
-                    }}>
-                      {avgScore}%
-                    </div>
+                    {/* 🆕 Pastille : icône colorée selon état (sans pourcentage) */}
+                    {isPro ? (
+                      <div style={{
+                        width: "48px", height: "48px", borderRadius: "50%", flexShrink: 0,
+                        background: "#ede9fe",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "22px",
+                      }}>
+                        📋
+                      </div>
+                    ) : (
+                      <div style={{
+                        width: "48px", height: "48px", borderRadius: "50%", flexShrink: 0,
+                        background: avgScore >= 60 ? "#dcfce7" : avgScore >= 40 ? "#fef9c3" : "#fef2f2",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "22px",
+                      }}>
+                        📊
+                      </div>
+                    )}
                     <div style={{ flexGrow: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "15px", fontWeight: 700, color: "#2B3442", marginBottom: "2px" }}>
-                        {a.nom_atelier || "Analyse sans nom"}
+                      <div style={{ fontSize: "15px", fontWeight: 700, color: "#2B3442", marginBottom: "2px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        {a.nom_atelier || (isPro ? "Auto-évaluation" : "Analyse sans nom")}
+                        {isPro && (
+                          <span style={{
+                            fontSize: "10px", fontWeight: 700,
+                            background: "#ede9fe", color: "#6B2468",
+                            padding: "2px 8px", borderRadius: "10px",
+                            textTransform: "uppercase", letterSpacing: "0.5px",
+                          }}>
+                            Auto-évaluation
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: "12px", color: "#6b7280", display: "flex", gap: "12px", flexWrap: "wrap" }}>
                         {a.date_atelier && <span>{new Date(a.date_atelier).toLocaleDateString("fr-FR")}</span>}
+                        {!a.date_atelier && <span>{new Date(a.created_at).toLocaleDateString("fr-FR")}</span>}
                         {a.nb_jeunes && <span>{a.nb_jeunes} jeunes</span>}
-                        <span>{forces} force{forces !== 1 ? "s" : ""}</span>
-                        {critiques > 0 && <span style={{ color: "#dc2626" }}>{critiques} critique{critiques !== 1 ? "s" : ""}</span>}
+                        {!isPro && <span>{forces} force{forces !== 1 ? "s" : ""}</span>}
+                        {!isPro && critiques > 0 && <span style={{ color: "#dc2626" }}>{critiques} critique{critiques !== 1 ? "s" : ""}</span>}
                       </div>
                       {alertes.length > 0 && (
                         <div style={{ fontSize: "11px", color: "#ea580c", marginTop: "4px" }}>
@@ -659,14 +683,62 @@ function DashboardContent() {
 
 /* ═══ MODALE DÉTAILS ANALYSE ═══ */
 
+/* ═══════════════════════════════════════════
+   MINI MARKDOWN RENDERER (sécurisé)
+   Convertit un texte markdown simple en HTML
+   pour l'affichage de l'analyse IA dans la modal
+   ═══════════════════════════════════════════ */
+
+function renderMarkdownLite(text: string): string {
+  if (!text) return "";
+  // Échappement HTML d'abord (sécurité)
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  // Titres (ordre important : du plus long au plus court)
+  html = html.replace(/^#### (.+)$/gm, '<h4 style="font-size:13px;font-weight:700;color:#2B3442;margin:14px 0 6px;">$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;color:#007479;margin:18px 0 8px;">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h3 style="font-size:15px;font-weight:800;color:#2B3442;margin:20px 0 10px;border-bottom:2px solid #e0f3f4;padding-bottom:4px;">$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h2 style="font-size:17px;font-weight:800;color:#2B3442;margin:24px 0 12px;">$1</h2>');
+  // Séparateurs
+  html = html.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid #e5e5e5;margin:16px 0;" />');
+  // Gras
+  html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong style="color:#2B3442;">$1</strong>');
+  // Italique *texte*
+  html = html.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
+  // Italique _texte_ (style alternatif fréquemment utilisé par l'IA)
+  html = html.replace(/(^|[\s,;:!?(>])_([^_\n]+)_(?=[\s,;:!?).<]|$)/g, '$1<em>$2</em>');
+  // Listes
+  html = html.replace(/^- (.+)$/gm, '<li style="margin-bottom:6px;">$1</li>');
+  html = html.replace(/((?:<li[^>]*>.*?<\/li>\s*)+)/gs, '<ul style="margin:8px 0 12px 20px;padding-left:8px;list-style:disc;">$1</ul>');
+  // Paragraphes
+  html = html.replace(/\n\n+/g, '</p><p style="margin:0 0 12px;">');
+  html = '<p style="margin:0 0 12px;">' + html + '</p>';
+  html = html.replace(/\n/g, '<br/>');
+  // Nettoyage
+  html = html.replace(/<p[^>]*>\s*(<(?:h2|h3|ul|hr)[^>]*>)/g, '$1');
+  html = html.replace(/(<\/(?:h2|h3|ul)>)\s*<br\/>/g, '$1');
+  html = html.replace(/(<hr[^>]*\/>)\s*<br\/>/g, '$1');
+  html = html.replace(/<p[^>]*>\s*<\/p>/g, '');
+  return html;
+}
+
 function AnalyseDetailModal({ analyse, onClose }: { analyse: AnalyseRow; onClose: () => void }) {
   const scores = analyse.scores || {};
   const detail = analyse.scores_detail || {};
   const alertes = analyse.alertes || [];
-  const scoreEntries = CLE_LABELS.map((k) => [k, scores[k] || 0] as [string, number]);
-  const avgScore = scoreEntries.length > 0
-    ? Math.round(scoreEntries.reduce((sum, [, s]) => sum + s, 0) / scoreEntries.length)
-    : 0;
+  const isPro = analyse.type_eval === "diagnostic_pro"; // 🆕
+
+  // Protection : ne traiter scores que si ce sont bien des nombres
+  const safeScores: Record<string, number> = {};
+  for (const [k, v] of Object.entries(scores)) {
+    if (typeof v === "number") safeScores[k] = v;
+  }
+  const scoreEntries = CLE_LABELS.map((k) => [k, safeScores[k] || 0] as [string, number]);
 
   return (
     <div onClick={onClose} style={{
@@ -684,16 +756,24 @@ function AnalyseDetailModal({ analyse, onClose }: { analyse: AnalyseRow; onClose
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280",
         }}>✕</button>
 
-        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#2B3442", marginBottom: "4px", paddingRight: "40px" }}>
-          {analyse.nom_atelier || "Analyse sans nom"}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#2B3442", marginBottom: "4px", paddingRight: "40px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {analyse.nom_atelier || (isPro ? "Auto-évaluation" : "Analyse sans nom")}
+          {isPro && (
+            <span style={{
+              fontSize: "11px", fontWeight: 700,
+              background: "#ede9fe", color: "#6B2468",
+              padding: "3px 10px", borderRadius: "10px",
+              textTransform: "uppercase", letterSpacing: "0.5px",
+            }}>
+              Auto-évaluation
+            </span>
+          )}
         </h2>
         <div style={{ fontSize: "13px", color: "#6b7280", marginBottom: "24px", display: "flex", gap: "16px", flexWrap: "wrap" }}>
-          {analyse.date_atelier && <span>📅 {new Date(analyse.date_atelier).toLocaleDateString("fr-FR")}</span>}
+          {analyse.date_atelier
+            ? <span>📅 {new Date(analyse.date_atelier).toLocaleDateString("fr-FR")}</span>
+            : <span>📅 {new Date(analyse.created_at).toLocaleDateString("fr-FR")}</span>}
           {analyse.nb_jeunes && <span>👥 {analyse.nb_jeunes} jeunes</span>}
-          {analyse.type_eval && <span>📋 {analyse.type_eval}</span>}
-          <span style={{ fontWeight: 700, color: avgScore >= 60 ? "#16a34a" : avgScore >= 40 ? "#ca8a04" : "#dc2626" }}>
-            Score moyen : {avgScore}%
-          </span>
         </div>
 
         {alertes.length > 0 && (
@@ -702,79 +782,129 @@ function AnalyseDetailModal({ analyse, onClose }: { analyse: AnalyseRow; onClose
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
-          <RadarChart scores={scores} />
-        </div>
-
-        <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "16px" }}>Scores par clé</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
-          {scoreEntries.map(([cle, score]) => {
-            const isAlerte = alertes.includes(cle);
-            return (
-              <div key={cle}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: isAlerte ? "#ea580c" : "#2B3442" }}>
-                    {isAlerte ? "⚠️ " : ""}{cle}
-                  </span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: score >= 60 ? "#16a34a" : score >= 40 ? "#ca8a04" : "#dc2626" }}>
-                    {score}%
-                  </span>
-                </div>
-                <div style={{ height: "8px", borderRadius: "4px", background: "#f3f4f6", overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: "4px", transition: "width 0.5s ease", width: `${score}%`,
-                    background: score >= 60 ? "#4caf50" : score >= 40 ? "#FCC33E" : "#e74c3c",
-                  }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {Object.keys(detail).length > 0 && (
+        {/* 🆕 Pour diagnostic_pro : afficher UNIQUEMENT l'analyse IA, pas le radar/scores */}
+        {isPro ? (
+          analyse.analysis_text ? (
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "12px" }}>💡 Analyse personnalisée</h3>
+              <div
+                style={{ fontSize: "14px", lineHeight: 1.7, color: "#2B3442" }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdownLite(analyse.analysis_text) }}
+              />
+            </div>
+          ) : (
+            <div style={{
+              padding: "20px", borderRadius: "10px", background: "#f9fafb", border: "1px dashed #d1d5db",
+              fontSize: "13px", color: "#6b7280", textAlign: "center",
+            }}>
+              Cette auto-évaluation n'a pas d'analyse IA sauvegardée (analyses antérieures à la mise à jour).
+              Refaites un diagnostic pour bénéficier de l'analyse complète.
+            </div>
+          )
+        ) : (
+          /* Pour les baromètres : garder le radar + scores comme avant, mais SANS les pourcentages */
           <>
-            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "16px" }}>Répartition des réponses par clé</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px" }}>
-              {CLE_LABELS.map((cle) => {
-                const d = detail[cle];
-                if (!d) return null;
-                const total = (d.rose || 0) + (d.jaune || 0) + (d.bleu || 0) + (d.vert || 0);
-                if (total === 0) return null;
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
+              <RadarChart scores={safeScores} />
+            </div>
+
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "16px" }}>Scores par clé</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+              {scoreEntries.map(([cle, score]) => {
+                const isAlerte = alertes.includes(cle);
                 return (
-                  <div key={cle} style={{ background: "#f9fafb", borderRadius: "10px", padding: "12px", border: "1px solid #e5e7eb" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#2B3442", marginBottom: "8px" }}>{cle}</div>
-                    <div style={{ display: "flex", height: "12px", borderRadius: "6px", overflow: "hidden", marginBottom: "6px" }}>
-                      {(["rose", "jaune", "bleu", "vert"] as const).map((couleur) => {
-                        const val = d[couleur] || 0;
-                        if (val === 0) return null;
-                        return <div key={couleur} style={{ width: `${(val / total) * 100}%`, background: COULEUR_HEX[couleur], minWidth: val > 0 ? "4px" : 0 }} />;
-                      })}
+                  <div key={cle}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: isAlerte ? "#ea580c" : "#2B3442" }}>
+                        {isAlerte ? "⚠️ " : ""}{cle}
+                      </span>
                     </div>
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                      {(["rose", "jaune", "bleu", "vert"] as const).map((couleur) => (
-                        <span key={couleur} style={{ fontSize: "11px", color: "#6b7280", display: "flex", alignItems: "center", gap: "3px" }}>
-                          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: COULEUR_HEX[couleur], display: "inline-block" }} />
-                          {d[couleur] || 0}
-                        </span>
-                      ))}
+                    <div style={{ height: "8px", borderRadius: "4px", background: "#f3f4f6", overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: "4px", transition: "width 0.5s ease", width: `${score}%`,
+                        background: score >= 60 ? "#4caf50" : score >= 40 ? "#FCC33E" : "#e74c3c",
+                      }} />
                     </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Répartition des réponses : uniquement si format ancien valide (couleurs rose/jaune/bleu/vert) */}
+            {Object.keys(detail).length > 0 && CLE_LABELS.some((cle) => {
+              const d = detail[cle];
+              return d && typeof d === "object" && (typeof d.rose === "number" || typeof d.jaune === "number" || typeof d.bleu === "number" || typeof d.vert === "number");
+            }) && (
+              <>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#2B3442", marginBottom: "16px" }}>Répartition des réponses par clé</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px" }}>
+                  {CLE_LABELS.map((cle) => {
+                    const d = detail[cle];
+                    if (!d || typeof d !== "object") return null;
+                    // Skip si pas au format couleurs (ex: {q1, q2, zone})
+                    const rose = typeof d.rose === "number" ? d.rose : 0;
+                    const jaune = typeof d.jaune === "number" ? d.jaune : 0;
+                    const bleu = typeof d.bleu === "number" ? d.bleu : 0;
+                    const vert = typeof d.vert === "number" ? d.vert : 0;
+                    const total = rose + jaune + bleu + vert;
+                    if (total === 0) return null;
+                    return (
+                      <div key={cle} style={{ background: "#f9fafb", borderRadius: "10px", padding: "12px", border: "1px solid #e5e7eb" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 700, color: "#2B3442", marginBottom: "8px" }}>{cle}</div>
+                        <div style={{ display: "flex", height: "12px", borderRadius: "6px", overflow: "hidden", marginBottom: "6px" }}>
+                          {(["rose", "jaune", "bleu", "vert"] as const).map((couleur) => {
+                            const val = couleur === "rose" ? rose : couleur === "jaune" ? jaune : couleur === "bleu" ? bleu : vert;
+                            if (val === 0) return null;
+                            return <div key={couleur} style={{ width: `${(val / total) * 100}%`, background: COULEUR_HEX[couleur], minWidth: val > 0 ? "4px" : 0 }} />;
+                          })}
+                        </div>
+                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                          {(["rose", "jaune", "bleu", "vert"] as const).map((couleur) => {
+                            const val = couleur === "rose" ? rose : couleur === "jaune" ? jaune : couleur === "bleu" ? bleu : vert;
+                            return (
+                              <span key={couleur} style={{ fontSize: "11px", color: "#6b7280", display: "flex", alignItems: "center", gap: "3px" }}>
+                                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: COULEUR_HEX[couleur], display: "inline-block" }} />
+                                {val}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </>
         )}
 
-        <div style={{ marginTop: "20px", padding: "12px 16px", background: "#f9fafb", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Légende</div>
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "12px", color: "#4b5563" }}>
-            {(["rose", "jaune", "bleu", "vert"] as const).map((c) => (
-              <span key={c} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: COULEUR_HEX[c] }} />
-                {COULEUR_LABELS[c]}
-              </span>
-            ))}
-          </div>
+        {/* 🆕 Bouton pour aller à la BAO filtrée */}
+        <div style={{ display: "flex", gap: "12px", marginTop: "28px", flexWrap: "wrap" }}>
+          <Link
+            href={`/bao?mode=cles&alertes=${encodeURIComponent(alertes.join(","))}&atelier=${encodeURIComponent(analyse.nom_atelier || "")}`}
+            onClick={onClose}
+            style={{
+              padding: "10px 18px", borderRadius: "20px", background: "#00989D",
+              color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none",
+            }}
+          >
+            🔑 Trouver les outils adaptés
+          </Link>
         </div>
+
+        {/* Légende des couleurs : uniquement pour les baromètres (les couleurs rose/jaune/bleu/vert ne s'appliquent pas aux auto-évaluations) */}
+        {!isPro && (
+          <div style={{ marginTop: "20px", padding: "12px 16px", background: "#f9fafb", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Légende</div>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "12px", color: "#4b5563" }}>
+              {(["rose", "jaune", "bleu", "vert"] as const).map((c) => (
+                <span key={c} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: COULEUR_HEX[c] }} />
+                  {COULEUR_LABELS[c]}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -8,13 +8,14 @@ import { getProfileByUserId, Profile } from "@/lib/auth";
 import type { User } from "@supabase/supabase-js";
 
 // Définition des rôles et permissions
-type AdminRole = "super_admin" | "editor" | "moderator" | "analyst";
+type AdminRole = "super_admin" | "editor" | "moderator" | "analyst" | "pedagogical_reviewer";
 
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: "Super Admin",
   editor: "Éditeur",
   moderator: "Modérateur",
   analyst: "Analyste",
+  pedagogical_reviewer: "Responsable validation pédago",
 };
 
 interface NavItem {
@@ -26,25 +27,35 @@ interface NavItem {
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Tableau de bord", icon: "📊", roles: ["super_admin", "editor", "moderator", "analyst"] },
+  // Tableau de bord accessible à tous les admins
+  { href: "/admin", label: "Tableau de bord", icon: "📊", roles: ["super_admin", "editor", "moderator", "analyst", "pedagogical_reviewer"] },
+  // Contenu de la BAO (Editor)
   { href: "/admin/fiches", label: "Fiches", icon: "📝", roles: ["super_admin", "editor"] },
   { href: "/admin/objectifs", label: "Objectifs", icon: "🎯", roles: ["super_admin", "editor"] },
   { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑", roles: ["super_admin", "editor"] },
+  // Gestion des utilisateurs (Modérateur)
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥", roles: ["super_admin", "moderator"] },
-  { href: "/admin/propositions", label: "Propositions", icon: "💡", roles: ["super_admin", "editor"] },
+  // 🆕 Validation pédagogique : Propositions + Analyses IA (Responsable validation pédago)
+  { href: "/admin/propositions", label: "Propositions", icon: "💡", roles: ["super_admin", "pedagogical_reviewer"] },
+  { href: "/admin/analyses-ia", label: "Analyses IA", icon: "🤖", roles: ["super_admin", "pedagogical_reviewer"] },
+  // Analytics (Analyste)
   { href: "/admin/analytics", label: "Analytics", icon: "📈", roles: ["super_admin", "analyst"] },
+  // Pages dépréciées (ancien modèle)
   { href: "/admin/parcours", label: "Parcours", icon: "🗺", roles: ["super_admin", "editor"], deprecated: true },
   { href: "/admin/etapes", label: "Étapes", icon: "📍", roles: ["super_admin", "editor"], deprecated: true },
 ];
 
-function hasAccess(role: AdminRole | null, allowedRoles: AdminRole[]): boolean {
-  if (!role) return false;
-  return allowedRoles.includes(role);
+// 🆕 hasAccess et canAccessPath travaillent maintenant avec un tableau de rôles.
+// L'utilisateur a accès s'il possède AU MOINS UN des rôles autorisés (ou est super_admin).
+function hasAccess(roles: AdminRole[] | null, allowedRoles: AdminRole[]): boolean {
+  if (!roles || roles.length === 0) return false;
+  if (roles.includes("super_admin")) return true;
+  return roles.some((r) => allowedRoles.includes(r));
 }
 
-function canAccessPath(role: AdminRole | null, pathname: string): boolean {
-  if (!role) return false;
-  if (role === "super_admin") return true;
+function canAccessPath(roles: AdminRole[] | null, pathname: string): boolean {
+  if (!roles || roles.length === 0) return false;
+  if (roles.includes("super_admin")) return true;
 
   // Tableau de bord accessible à tous les admins
   if (pathname === "/admin") return true;
@@ -53,7 +64,7 @@ function canAccessPath(role: AdminRole | null, pathname: string): boolean {
   const matchingItem = ALL_NAV_ITEMS.find(
     (item) => item.href !== "/admin" && pathname.startsWith(item.href)
   );
-  if (matchingItem) return hasAccess(role, matchingItem.roles);
+  if (matchingItem) return hasAccess(roles, matchingItem.roles);
 
   // Par défaut, refuser
   return false;
@@ -69,8 +80,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const isLoginPage = pathname === "/admin/login";
 
-  const adminRole = (profile?.admin_role as AdminRole | null) ||
-    (profile?.is_admin ? "super_admin" : null);
+  // 🆕 On lit admin_roles (tableau) en priorité.
+  // Fallbacks pour compat : admin_role (ancien text), puis is_admin → super_admin.
+  const adminRoles: AdminRole[] | null = (() => {
+    if (!profile) return null;
+    const rolesArray = (profile as any).admin_roles as string[] | undefined;
+    if (rolesArray && rolesArray.length > 0) {
+      return rolesArray.filter((r) => r) as AdminRole[];
+    }
+    if (profile.admin_role) {
+      return [profile.admin_role as AdminRole];
+    }
+    if (profile.is_admin) {
+      return ["super_admin"];
+    }
+    return null;
+  })();
 
   useEffect(() => {
     async function checkAuth() {
@@ -107,12 +132,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Vérifier l'accès à la page courante
   useEffect(() => {
-    if (!loading && profile && adminRole && !isLoginPage) {
-      if (!canAccessPath(adminRole, pathname)) {
+    if (!loading && profile && adminRoles && !isLoginPage) {
+      if (!canAccessPath(adminRoles, pathname)) {
         router.push("/admin");
       }
     }
-  }, [pathname, adminRole, loading, profile, router, isLoginPage]);
+  }, [pathname, adminRoles, loading, profile, router, isLoginPage]);
 
   // Fermer le menu quand on change de page
   useEffect(() => {
@@ -137,7 +162,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!user || !profile) return null;
 
   // Filtrer les items de navigation selon le rôle
-  const navItems = ALL_NAV_ITEMS.filter((item) => hasAccess(adminRole, item.roles));
+  const navItems = ALL_NAV_ITEMS.filter((item) => hasAccess(adminRoles, item.roles));
 
   return (
     <>
@@ -330,16 +355,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {user.email}
             </div>
-            {adminRole && (
+            {adminRoles && adminRoles.length > 0 && (
               <div style={{
                 fontSize: "10px",
                 fontWeight: 700,
-                color: adminRole === "super_admin" ? "#FCC33E" : "rgba(255,255,255,0.4)",
+                color: adminRoles.includes("super_admin") ? "#FCC33E" : "rgba(255,255,255,0.4)",
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
                 marginBottom: "8px",
+                lineHeight: 1.4,
               }}>
-                {ROLE_LABELS[adminRole]}
+                {adminRoles.map((r) => ROLE_LABELS[r] || r).join(" · ")}
               </div>
             )}
             <div style={{ display: "flex", gap: "8px" }}>

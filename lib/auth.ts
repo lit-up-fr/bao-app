@@ -21,6 +21,8 @@ export interface Profile {
   status: "en_attente" | "active" | "suspended" | "refused";
   is_admin: boolean;
   admin_role?: string | null;
+  // 🆕 Nouveau : un admin peut cumuler plusieurs rôles (super_admin override les autres)
+  admin_roles?: string[] | null;
   created_at?: string;
   updated_at?: string;
   last_seen_at?: string;
@@ -184,6 +186,30 @@ export async function updateProfileRole(
     .update({
       is_admin: isAdmin,
       admin_role: adminRole,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
+// 🆕 Nouvelle fonction : update plusieurs rôles à la fois (admin_roles[])
+// Garde aussi admin_role à jour pour compatibilité (= 1er rôle du tableau).
+export async function updateProfileRoles(
+  userId: string,
+  isAdmin: boolean,
+  adminRoles: string[]
+) {
+  const cleanRoles = (adminRoles || []).filter((r) => r && r.trim().length > 0);
+  // Pour rétrocompat, on garde aussi admin_role = 1er rôle (ou null si vide)
+  const legacyAdminRole = cleanRoles.length > 0 ? cleanRoles[0] : null;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      is_admin: isAdmin,
+      admin_roles: cleanRoles,
+      admin_role: legacyAdminRole,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllProfiles, updateProfileStatus, updateProfileRole, deleteUserCompletely, Profile } from "@/lib/auth";
+import { getAllProfiles, updateProfileStatus, updateProfileRole, updateProfileRoles, deleteUserCompletely, Profile } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { getProfileByUserId } from "@/lib/auth";
+import RolesCheckboxes from "./RolesCheckboxes";
 
 type StatusFilter = "all" | "en_attente" | "active" | "suspended" | "refused";
 
@@ -34,7 +35,13 @@ export default function AdminUtilisateursPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const prof = await getProfileByUserId(session.user.id);
-        setCurrentUserRole(prof?.admin_role || (prof?.is_admin ? "super_admin" : null));
+        // Lire admin_roles[] en priorité, sinon fallback sur admin_role (legacy)
+        const rolesArray = (prof as any)?.admin_roles as string[] | undefined;
+        if (rolesArray && rolesArray.length > 0) {
+          setCurrentUserRole(rolesArray.includes("super_admin") ? "super_admin" : rolesArray[0]);
+        } else {
+          setCurrentUserRole(prof?.admin_role || (prof?.is_admin ? "super_admin" : null));
+        }
       }
     }
     loadCurrentRole();
@@ -102,6 +109,33 @@ export default function AdminUtilisateursPage() {
       }
     } catch (e) {
       console.error("Erreur mise à jour rôle:", e);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  // 🆕 Nouvelle fonction : update plusieurs rôles à la fois (tableau)
+  async function handleRolesChange(userId: string, newRoles: string[]) {
+    setActionLoading(userId);
+    try {
+      const isAdmin = newRoles.length > 0;
+      await updateProfileRoles(userId, isAdmin, newRoles);
+      // Pour rétrocompat, on met aussi à jour admin_role = 1er rôle
+      const legacyRole = newRoles.length > 0 ? newRoles[0] : null;
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === userId
+            ? { ...p, is_admin: isAdmin, admin_role: legacyRole, admin_roles: newRoles }
+            : p
+        )
+      );
+      if (selectedProfile?.id === userId) {
+        setSelectedProfile((prev) =>
+          prev ? { ...prev, is_admin: isAdmin, admin_role: legacyRole, admin_roles: newRoles } : null
+        );
+      }
+    } catch (e) {
+      console.error("Erreur mise à jour rôles:", e);
     } finally {
       setActionLoading(null);
     }
@@ -514,34 +548,18 @@ export default function AdminUtilisateursPage() {
               />
             </div>
 
-            {/* Rôle admin (super_admin uniquement) */}
+            {/* Rôles admin (super_admin uniquement) - cumulables via checkboxes */}
             {currentUserRole === "super_admin" && (
               <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}>
-                <div style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
-                  Rôle administrateur
-                </div>
-                <select
-                  value={selectedProfile.admin_role || "none"}
-                  onChange={(e) => handleRoleChange(selectedProfile.id, e.target.value)}
+                <RolesCheckboxes
+                  selectedRoles={
+                    (selectedProfile as any).admin_roles && (selectedProfile as any).admin_roles.length > 0
+                      ? (selectedProfile as any).admin_roles
+                      : (selectedProfile.admin_role ? [selectedProfile.admin_role] : [])
+                  }
+                  onChange={(newRoles) => handleRolesChange(selectedProfile.id, newRoles)}
                   disabled={actionLoading === selectedProfile.id}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    background: "white",
-                    color: "#2B3442",
-                  }}
-                >
-                  <option value="none">Aucun (utilisateur standard)</option>
-                  <option value="super_admin">Super Admin (accès total)</option>
-                  <option value="editor">Éditeur (fiches, parcours, clés, étapes)</option>
-                  <option value="moderator">Modérateur (gestion utilisateurs)</option>
-                  <option value="analyst">Analyste (lecture seule, analytics)</option>
-                </select>
+                />
               </div>
             )}
 
