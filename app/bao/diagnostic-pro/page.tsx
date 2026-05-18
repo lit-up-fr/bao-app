@@ -582,7 +582,7 @@ Génère une analyse personnalisée en respectant strictement la posture défini
           font-weight: 700;
         }
       `}</style>
-      <AppHeader />
+      <AppHeader searchQuery="" onSearchChange={() => {}} />
       <div style={S.wrap}>
         <div style={{ marginBottom: "20px" }}>
           <Link href="/bao" style={{ fontSize: "13px", color: "var(--canard)", textDecoration: "none", fontWeight: 600 }}>← Retour à la boîte à outils</Link>

@@ -82,7 +82,7 @@ export default function DiagnostiquerPage() {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader searchQuery="" onSearchChange={() => {}} />
       <main style={{ background: "var(--blanc)", minHeight: "calc(100vh - 64px)", padding: "32px 28px" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           {/* Breadcrumb */}
