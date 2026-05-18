@@ -23,6 +23,8 @@ interface DiagnosticAnalysis {
   nb_jeunes: number | null;
   user_email: string | null;
   reviewed_status: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   zones: { appui?: string[]; explorer?: string[]; travailler?: string[] } | null;
   analysis_text: string | null;
   precisions: any;
