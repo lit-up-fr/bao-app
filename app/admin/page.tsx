@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { FileText, ClipboardList, Key, MapPin, Map, type LucideIcon } from "lucide-react";
 
 interface Stats {
   totalFiches: number;
@@ -44,13 +45,13 @@ export default function AdminDashboard() {
     loadStats();
   }, []);
 
-  const cards = stats
+  const cards: Array<{ label: string; value: number; color: string; href: string; icon: LucideIcon }> = stats
     ? [
-        { label: "Fiches publiées", value: stats.publishedFiches, color: "var(--canard)", href: "/admin/fiches", icon: "📝" },
-        { label: "Brouillons", value: stats.draftFiches, color: "var(--jaune-accent)", href: "/admin/fiches", icon: "📋" },
-        { label: "Clés d'engagement", value: stats.totalCles, color: "var(--prune)", href: "/admin/cles", icon: "🔑" },
-        { label: "Étapes de parcours", value: stats.totalEtapes, color: "var(--anthracite)", href: "/admin/etapes", icon: "📍" },
-        { label: "Parcours guidés", value: stats.totalParcours, color: "var(--canard-dark)", href: "/admin/parcours", icon: "🗺" },
+        { label: "Fiches publiées", value: stats.publishedFiches, color: "var(--canard)", href: "/admin/fiches", icon: FileText },
+        { label: "Brouillons", value: stats.draftFiches, color: "var(--jaune-accent)", href: "/admin/fiches", icon: ClipboardList },
+        { label: "Clés d'engagement", value: stats.totalCles, color: "var(--prune)", href: "/admin/cles", icon: Key },
+        { label: "Étapes de parcours", value: stats.totalEtapes, color: "var(--anthracite)", href: "/admin/etapes", icon: MapPin },
+        { label: "Parcours guidés", value: stats.totalParcours, color: "var(--canard-dark)", href: "/admin/parcours", icon: Map },
       ]
     : [];
 
@@ -73,42 +74,45 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "16px" }}>
-          {cards.map((card) => (
-            <Link
-              key={card.label}
-              href={card.href}
-              style={{
-                background: "white",
-                border: "2px solid var(--line)",
-                borderRadius: "16px",
-                padding: "24px",
-                textDecoration: "none",
-                color: "inherit",
-                transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(43,52,66,0.08)";
-                e.currentTarget.style.borderColor = card.color;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderColor = "var(--line)";
-              }}
-            >
-              <span style={{ fontSize: "28px" }}>{card.icon}</span>
-              <span style={{ fontSize: "36px", fontWeight: 800, color: card.color, lineHeight: 1 }}>
-                {card.value}
-              </span>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--muted)" }}>
-                {card.label}
-              </span>
-            </Link>
-          ))}
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Link
+                key={card.label}
+                href={card.href}
+                style={{
+                  background: "white",
+                  border: "2px solid var(--line)",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  textDecoration: "none",
+                  color: "inherit",
+                  transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(43,52,66,0.08)";
+                  e.currentTarget.style.borderColor = card.color;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderColor = "var(--line)";
+                }}
+              >
+                <Icon size={28} strokeWidth={2} color={card.color} />
+                <span style={{ fontSize: "36px", fontWeight: 800, color: card.color, lineHeight: 1 }}>
+                  {card.value}
+                </span>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--muted)" }}>
+                  {card.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       )}
 

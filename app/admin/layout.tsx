@@ -318,12 +318,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     fontSize: "14px",
                     fontWeight: 600,
                     textDecoration: "none",
-                    color: isActive ? "white" : "rgba(255,255,255,0.6)",
-                    background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                    color: "white",
+                    background: isActive ? "var(--canard)" : "transparent",
                     transition: "all 0.15s",
                   }}
                 >
-                  <Icon size={18} strokeWidth={2} />
+                  <Icon size={18} strokeWidth={2} color={isActive ? "white" : "#FCC33D"} />
                   {item.label}
                 </Link>
               );
@@ -351,12 +351,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         fontSize: "13px",
                         fontWeight: 600,
                         textDecoration: "none",
-                        color: isActive ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)",
-                        background: isActive ? "rgba(255,255,255,0.06)" : "transparent",
+                        color: isActive ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.45)",
+                        background: isActive ? "rgba(0,152,157,0.4)" : "transparent",
                         transition: "all 0.15s",
                       }}
                     >
-                      <Icon size={16} strokeWidth={2} style={{ opacity: 0.5 }} />
+                      <Icon size={16} strokeWidth={2} color={isActive ? "white" : "#FCC33D"} style={{ opacity: 0.6 }} />
                       {item.label}
                     </Link>
                   );
