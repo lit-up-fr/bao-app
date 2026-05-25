@@ -23,6 +23,7 @@ import Sidebar, { DUREE_TRANCHES, parseDureeLibreToMinutes } from "@/components/
 import FicheCard from "@/components/FicheCard";
 import FicheModal from "@/components/FicheModal";
 import WelcomeModal from "@/components/WelcomeModal";
+import { Search } from "lucide-react";
 
 interface FicheWithMeta extends Fiche {
   fichesCles: Cle[];
@@ -617,7 +618,7 @@ export default function BaoPage() {
             <div className="diag-overlay-inner" onClick={(e) => e.stopPropagation()} style={{ background: "white", maxWidth: "780px", width: "100%", borderRadius: "20px", padding: "40px 36px", position: "relative", animation: "modalIn 0.3s ease", maxHeight: "90vh", overflowY: "auto" }}>
               <button onClick={() => setShowDiagnosticOverlay(false)} style={{ position: "absolute", top: "16px", right: "16px", background: "var(--blanc)", border: "none", fontSize: "22px", cursor: "pointer", color: "var(--anthracite)", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               <div style={{ textAlign: "center", marginBottom: "28px" }}>
-                <span style={{ fontSize: "36px" }}>🔍</span>
+                <Search size={36} strokeWidth={2} color="var(--canard)" style={{ display: "inline-block" }} />
                 <h2 style={{ fontSize: "24px", fontWeight: 800, color: "var(--anthracite)", margin: "12px 0 6px", letterSpacing: "-0.02em" }}>Diagnostiquer la motivation</h2>
                 <p style={{ fontSize: "15px", color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>Identifiez les leviers et freins de motivation de votre groupe ou d'un jeune</p>
               </div>

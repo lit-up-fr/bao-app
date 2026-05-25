@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { Bot, ClipboardList, BarChart3, Key } from "lucide-react";
 
 interface DiagnosticAnalysis {
   id: string;
@@ -71,8 +72,9 @@ export default function AnalysesIAListPage() {
   return (
     <div>
       <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)" }}>
-          🤖 Analyses IA à valider
+        <h1 style={{ fontSize: "28px", fontWeight: 800, color: "var(--anthracite)", display: "flex", alignItems: "center", gap: "10px" }}>
+          <Bot size={28} strokeWidth={2} color="var(--canard)" />
+          Analyses IA à valider
         </h1>
         <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: "4px", maxWidth: "640px" }}>
           Relis les analyses générées par l&apos;IA et envoie les paragraphes validés
@@ -159,9 +161,10 @@ export default function AnalysesIAListPage() {
                   width: "44px", height: "44px", borderRadius: "10px", flexShrink: 0,
                   background: a.source === "diagnostic_pro" ? "#ede9fe" : "#e0f3f4",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "22px",
                 }}>
-                  {a.source === "diagnostic_pro" ? "📋" : "📊"}
+                  {a.source === "diagnostic_pro"
+                    ? <ClipboardList size={22} strokeWidth={2} color="#6B2468" />
+                    : <BarChart3 size={22} strokeWidth={2} color="var(--canard)" />}
                 </div>
 
                 {/* Info principale */}
@@ -177,8 +180,9 @@ export default function AnalysesIAListPage() {
                     {a.nb_jeunes && <span>{a.nb_jeunes} jeunes</span>}
                   </div>
                   {travailler.length > 0 && (
-                    <div style={{ fontSize: "11px", color: "#ea580c", marginTop: "4px" }}>
-                      🔑 À travailler : {travailler.join(", ")}{(a.zones?.travailler?.length || 0) > 3 ? "…" : ""}
+                    <div style={{ fontSize: "11px", color: "#ea580c", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Key size={11} strokeWidth={2.5} />
+                      <span>À travailler : {travailler.join(", ")}{(a.zones?.travailler?.length || 0) > 3 ? "…" : ""}</span>
                     </div>
                   )}
                 </div>

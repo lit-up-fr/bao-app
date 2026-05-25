@@ -24,6 +24,7 @@ import {
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import AppHeader from "@/components/AppHeader";
 import FicheModal from "@/components/FicheModal";
+import { Search, BarChart3, Clock, Users, User, type LucideIcon } from "lucide-react";
 
 interface FicheWithMeta extends Fiche {
   fichesCles: Cle[];
@@ -89,7 +90,9 @@ export default function DiagnostiquerPage() {
           <div style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "14px" }}>
             <Link href="/bao" style={{ color: "var(--canard)", textDecoration: "none", fontWeight: 600 }}>← BAO</Link>
             <span style={{ margin: "0 8px", color: "var(--muted)" }}>›</span>
-            <span style={{ color: "var(--canard)", fontWeight: 600 }}>🔍 Diagnostiquer la motivation</span>
+            <span style={{ color: "var(--canard)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "5px" }}>
+              <Search size={13} strokeWidth={2.5} /> Diagnostiquer la motivation
+            </span>
           </div>
 
           {/* Header */}
@@ -158,7 +161,7 @@ export default function DiagnostiquerPage() {
               (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(252, 195, 62, 0.2)";
             }}
           >
-            <span style={{ fontSize: "36px", flexShrink: 0 }}>📊</span>
+            <BarChart3 size={36} strokeWidth={2} style={{ flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: "16px", fontWeight: 800, marginBottom: "3px" }}>
                 Diagnostic déjà réalisé ?
@@ -241,11 +244,11 @@ function FicheModalWrapper({ fiche, cles, etape, onClose, userId, isAdmin }: {
 function ToolCard({ tool, onOpen }: { tool: FicheWithMeta; onOpen: () => void }) {
   const t = tool as any;
   // Construit les chips à partir des champs disponibles
-  const chips: string[] = [];
-  if (t.duree_libre) chips.push("⏱ " + t.duree_libre);
+  const chips: Array<{ icon: LucideIcon; label: string }> = [];
+  if (t.duree_libre) chips.push({ icon: Clock, label: t.duree_libre });
   if (t.format) {
-    if (t.format.toLowerCase().includes("collectif")) chips.push("👥 Collectif");
-    else if (t.format.toLowerCase().includes("individuel")) chips.push("👤 Individuel");
+    if (t.format.toLowerCase().includes("collectif")) chips.push({ icon: Users, label: "Collectif" });
+    else if (t.format.toLowerCase().includes("individuel")) chips.push({ icon: User, label: "Individuel" });
   }
 
   return (
@@ -299,16 +302,24 @@ function ToolCard({ tool, onOpen }: { tool: FicheWithMeta; onOpen: () => void })
       {/* Chips contextuels */}
       {chips.length > 0 && (
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
-          {chips.map((chip, i) => (
-            <span key={i} style={{
-              background: "#f6f6f8",
-              color: "#374151",
-              padding: "3px 9px",
-              borderRadius: "6px",
-              fontSize: "11px",
-              fontWeight: 600,
-            }}>{chip}</span>
-          ))}
+          {chips.map((chip, i) => {
+            const Icon = chip.icon;
+            return (
+              <span key={i} style={{
+                background: "#f6f6f8",
+                color: "#374151",
+                padding: "3px 9px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}>
+                <Icon size={11} strokeWidth={2.5} /> {chip.label}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -398,8 +409,12 @@ function AutoDiagCard({ onClick }: { onClick: () => void }) {
       </div>
 
       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
-        <span style={{ background: "#f6f6f8", color: "#374151", padding: "3px 9px", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>⏱ 10-15 min</span>
-        <span style={{ background: "#f6f6f8", color: "#374151", padding: "3px 9px", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>👤 Pro seul·e</span>
+        <span style={{ background: "#f6f6f8", color: "#374151", padding: "3px 9px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          <Clock size={11} strokeWidth={2.5} /> 10-15 min
+        </span>
+        <span style={{ background: "#f6f6f8", color: "#374151", padding: "3px 9px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          <User size={11} strokeWidth={2.5} /> Pro seul·e
+        </span>
       </div>
 
       <div style={{

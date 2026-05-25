@@ -12,6 +12,22 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import {
+  Calendar,
+  User,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  ClipboardList,
+  Save,
+  Send,
+  Pencil,
+  Lightbulb,
+  AlertTriangle,
+  Check,
+  Undo2,
+  Key,
+} from "lucide-react";
 
 interface DiagnosticAnalysis {
   id: string;
@@ -442,8 +458,8 @@ export default function AnalysesIADetailPage() {
 
       setSendResult(
         finalStatus === "validated"
-          ? "✅ " + paragraphsToSend.length + " paragraphe(s) envoyé(s) au Google Sheet."
-          : "✅ Analyse marquée comme rejetée."
+          ? paragraphsToSend.length + " paragraphe(s) envoyé(s) au Google Sheet."
+          : "Analyse marquée comme rejetée."
       );
       setAnalyse({ ...analyse, reviewed_status: finalStatus, reviewed_at: new Date().toISOString() });
       setTimeout(() => router.push("/admin/analyses-ia"), 2000);
@@ -487,12 +503,20 @@ export default function AnalysesIADetailPage() {
           <h1 style={{ fontSize: "26px", fontWeight: 800, color: "var(--anthracite)" }}>
             {analyse.nom_atelier || "Analyse sans nom"}
           </h1>
-          <div style={{ fontSize: "13px", color: "var(--muted)", display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "6px" }}>
-            <span>📅 {new Date(analyse.created_at).toLocaleString("fr-FR")}</span>
-            {analyse.user_email && <span>👤 {analyse.user_email}</span>}
+          <div style={{ fontSize: "13px", color: "var(--muted)", display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "6px", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              <Calendar size={13} strokeWidth={2} /> {new Date(analyse.created_at).toLocaleString("fr-FR")}
+            </span>
+            {analyse.user_email && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <User size={13} strokeWidth={2} /> {analyse.user_email}
+              </span>
+            )}
             {isAnalyseClosed && (
-              <span style={{ color: analyse.reviewed_status === "validated" ? "#16a34a" : "#9ca3af", fontWeight: 700 }}>
-                {analyse.reviewed_status === "validated" ? "✅ Validée et envoyée" : "🚫 Rejetée"}
+              <span style={{ color: analyse.reviewed_status === "validated" ? "#16a34a" : "#9ca3af", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                {analyse.reviewed_status === "validated"
+                  ? <><CheckCircle size={14} strokeWidth={2.5} /> Validée et envoyée</>
+                  : <><XCircle size={14} strokeWidth={2.5} /> Rejetée</>}
               </span>
             )}
           </div>
@@ -512,9 +536,12 @@ export default function AnalysesIADetailPage() {
               cursor: "pointer",
               fontFamily: "inherit",
               whiteSpace: "nowrap",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            🔄 Recommencer la relecture
+            <RefreshCw size={14} strokeWidth={2.5} /> Recommencer la relecture
           </button>
         )}
       </div>
@@ -532,7 +559,10 @@ export default function AnalysesIADetailPage() {
             borderBottom: showContext ? "1px solid var(--line)" : "none",
           }}
         >
-          <span>📋 Contexte complet du diagnostic</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <ClipboardList size={16} strokeWidth={2} color="var(--canard)" />
+            Contexte complet du diagnostic
+          </span>
           <span style={{ fontSize: "12px", color: "var(--muted)" }}>{showContext ? "▼ Masquer" : "▶ Afficher"}</span>
         </button>
         {showContext && (
@@ -587,7 +617,9 @@ export default function AnalysesIADetailPage() {
                 </div>
                 {precisionsNonVides.map(([cleId, txt]) => (
                   <div key={cleId} style={{ fontSize: "13px", marginBottom: "8px", padding: "8px 12px", background: "white", borderRadius: "6px", borderLeft: "3px solid var(--canard)" }}>
-                    <strong style={{ color: "var(--canard)" }}>🔑 {CLE_NAMES[cleId] || cleId} :</strong>
+                    <strong style={{ color: "var(--canard)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <Key size={13} strokeWidth={2.5} /> {CLE_NAMES[cleId] || cleId} :
+                    </strong>
                     <div style={{ marginTop: "3px", color: "var(--anthracite)" }}>&quot;{String(txt)}&quot;</div>
                   </div>
                 ))}
@@ -643,9 +675,17 @@ export default function AnalysesIADetailPage() {
             fontWeight: 700,
             cursor: sending || (totalValidated + totalAnnotated) === 0 ? "not-allowed" : "pointer",
             fontFamily: "inherit",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
           }}
         >
-          {sending ? "Envoi…" : ("📤 Envoyer " + (totalValidated + totalAnnotated) + " paragraphe(s) au Sheet")}
+          {sending ? "Envoi…" : (
+            <>
+              <Send size={15} strokeWidth={2.5} />
+              Envoyer {totalValidated + totalAnnotated} paragraphe(s) au Sheet
+            </>
+          )}
         </button>
 
         <button
@@ -661,16 +701,23 @@ export default function AnalysesIADetailPage() {
             fontWeight: 700,
             cursor: "pointer",
             fontFamily: "inherit",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
           }}
         >
-          🚫 Rejeter toute l&apos;analyse
+          <XCircle size={15} strokeWidth={2.5} /> Rejeter toute l&apos;analyse
         </button>
 
         {sendResult && (
-          <div style={{ color: "#16a34a", fontSize: "13px", fontWeight: 600 }}>{sendResult}</div>
+          <div style={{ color: "#16a34a", fontSize: "13px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <CheckCircle size={14} strokeWidth={2.5} /> {sendResult}
+          </div>
         )}
         {error && (
-          <div style={{ color: "#dc2626", fontSize: "13px", fontWeight: 600 }}>⚠️ {error}</div>
+          <div style={{ color: "#dc2626", fontSize: "13px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <AlertTriangle size={14} strokeWidth={2.5} /> {error}
+          </div>
         )}
       </div>
     </div>
@@ -736,24 +783,40 @@ function ParagraphCard({
 
         {/* Statut + boutons icônes */}
         <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
-          {isFlashSaved && <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700, marginRight: "4px" }}>💾 ✓</span>}
+          {isFlashSaved && (
+            <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700, marginRight: "4px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+              <Save size={12} strokeWidth={2.5} /> <Check size={12} strokeWidth={3} />
+            </span>
+          )}
 
           {paragraph.status === "pending" && (
             <>
-              <IconBtn label="Valider tel quel" color="#16a34a" onClick={onValidate}>✓</IconBtn>
-              <IconBtn label="Annoter pour l'IA" color="#0891b2" onClick={onAnnotate}>📝</IconBtn>
+              <IconBtn label="Valider tel quel" color="#16a34a" onClick={onValidate}>
+                <Check size={16} strokeWidth={3} />
+              </IconBtn>
+              <IconBtn label="Annoter pour l'IA" color="#0891b2" onClick={onAnnotate}>
+                <Pencil size={14} strokeWidth={2.5} />
+              </IconBtn>
             </>
           )}
           {isValidated && (
             <>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.5px", padding: "2px 8px", borderRadius: "10px", background: "#16a34a15", marginRight: "4px" }}>✓ Validé</span>
-              <IconBtn label="Annuler" color="#9ca3af" onClick={onReset} secondary>↶</IconBtn>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.5px", padding: "2px 8px", borderRadius: "10px", background: "#16a34a15", marginRight: "4px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <Check size={11} strokeWidth={3} /> Validé
+              </span>
+              <IconBtn label="Annuler" color="#9ca3af" onClick={onReset} secondary>
+                <Undo2 size={14} strokeWidth={2.5} />
+              </IconBtn>
             </>
           )}
           {isAnnotating && (
             <>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#0891b2", textTransform: "uppercase", letterSpacing: "0.5px", padding: "2px 8px", borderRadius: "10px", background: "#0891b215", marginRight: "4px" }}>📝 Annoté</span>
-              <IconBtn label="Annuler" color="#9ca3af" onClick={onReset} secondary>↶</IconBtn>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#0891b2", textTransform: "uppercase", letterSpacing: "0.5px", padding: "2px 8px", borderRadius: "10px", background: "#0891b215", marginRight: "4px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <Pencil size={11} strokeWidth={2.5} /> Annoté
+              </span>
+              <IconBtn label="Annuler" color="#9ca3af" onClick={onReset} secondary>
+                <Undo2 size={14} strokeWidth={2.5} />
+              </IconBtn>
             </>
           )}
         </div>
@@ -767,8 +830,8 @@ function ParagraphCard({
       {/* Zone d'annotation (si statut "annoté") */}
       {isAnnotating && (
         <div style={{ marginTop: "12px", padding: "12px 14px", background: "#f0f9ff", borderRadius: "8px", borderLeft: "3px solid #0891b2" }}>
-          <div style={{ fontSize: "11px", fontWeight: 700, color: "#0891b2", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            📝 Note pour l&apos;IA (le pro ne verra PAS cette note)
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "#0891b2", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: "5px" }}>
+            <Pencil size={11} strokeWidth={2.5} /> Note pour l&apos;IA (le pro ne verra PAS cette note)
           </div>
           <textarea
             value={paragraph.note || ""}
@@ -789,8 +852,8 @@ function ParagraphCard({
               resize: "vertical",
             }}
           />
-          <div style={{ fontSize: "11px", fontWeight: 700, color: "#0891b2", marginTop: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            💡 Reformulation suggérée (optionnel)
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "#0891b2", marginTop: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: "5px" }}>
+            <Lightbulb size={11} strokeWidth={2.5} /> Reformulation suggérée (optionnel)
           </div>
           <textarea
             value={paragraph.reformulation || ""}
@@ -824,9 +887,12 @@ function ParagraphCard({
               fontWeight: 700,
               cursor: "pointer",
               fontFamily: "inherit",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
             }}
           >
-            💾 Sauvegarder l&apos;annotation
+            <Save size={13} strokeWidth={2.5} /> Sauvegarder l&apos;annotation
           </button>
         </div>
       )}

@@ -6,6 +6,19 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getProfileByUserId, Profile } from "@/lib/auth";
 import type { User } from "@supabase/supabase-js";
+import {
+  LayoutDashboard,
+  FileText,
+  Target,
+  Key,
+  Users,
+  Lightbulb,
+  Bot,
+  TrendingUp,
+  Map,
+  MapPin,
+  type LucideIcon,
+} from "lucide-react";
 
 // Définition des rôles et permissions
 type AdminRole = "super_admin" | "editor" | "moderator" | "analyst" | "pedagogical_reviewer";
@@ -21,28 +34,28 @@ const ROLE_LABELS: Record<AdminRole, string> = {
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   roles: AdminRole[];
   deprecated?: boolean;
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
   // Tableau de bord accessible à tous les admins
-  { href: "/admin", label: "Tableau de bord", icon: "📊", roles: ["super_admin", "editor", "moderator", "analyst", "pedagogical_reviewer"] },
+  { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard, roles: ["super_admin", "editor", "moderator", "analyst", "pedagogical_reviewer"] },
   // Contenu de la BAO (Editor)
-  { href: "/admin/fiches", label: "Fiches", icon: "📝", roles: ["super_admin", "editor"] },
-  { href: "/admin/objectifs", label: "Objectifs", icon: "🎯", roles: ["super_admin", "editor"] },
-  { href: "/admin/cles", label: "Clés d'engagement", icon: "🔑", roles: ["super_admin", "editor"] },
+  { href: "/admin/fiches", label: "Fiches", icon: FileText, roles: ["super_admin", "editor"] },
+  { href: "/admin/objectifs", label: "Objectifs", icon: Target, roles: ["super_admin", "editor"] },
+  { href: "/admin/cles", label: "Clés d'engagement", icon: Key, roles: ["super_admin", "editor"] },
   // Gestion des utilisateurs (Modérateur)
-  { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "👥", roles: ["super_admin", "moderator"] },
-  // 🆕 Validation pédagogique : Propositions + Analyses IA (Responsable validation pédago)
-  { href: "/admin/propositions", label: "Propositions", icon: "💡", roles: ["super_admin", "pedagogical_reviewer"] },
-  { href: "/admin/analyses-ia", label: "Analyses IA", icon: "🤖", roles: ["super_admin", "pedagogical_reviewer"] },
+  { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users, roles: ["super_admin", "moderator"] },
+  // Validation pédagogique : Propositions + Analyses IA (Responsable validation pédago)
+  { href: "/admin/propositions", label: "Propositions", icon: Lightbulb, roles: ["super_admin", "pedagogical_reviewer"] },
+  { href: "/admin/analyses-ia", label: "Analyses IA", icon: Bot, roles: ["super_admin", "pedagogical_reviewer"] },
   // Analytics (Analyste)
-  { href: "/admin/analytics", label: "Analytics", icon: "📈", roles: ["super_admin", "analyst"] },
+  { href: "/admin/analytics", label: "Analytics", icon: TrendingUp, roles: ["super_admin", "analyst"] },
   // Pages dépréciées (ancien modèle)
-  { href: "/admin/parcours", label: "Parcours", icon: "🗺", roles: ["super_admin", "editor"], deprecated: true },
-  { href: "/admin/etapes", label: "Étapes", icon: "📍", roles: ["super_admin", "editor"], deprecated: true },
+  { href: "/admin/parcours", label: "Parcours", icon: Map, roles: ["super_admin", "editor"], deprecated: true },
+  { href: "/admin/etapes", label: "Étapes", icon: MapPin, roles: ["super_admin", "editor"], deprecated: true },
 ];
 
 // 🆕 hasAccess et canAccessPath travaillent maintenant avec un tableau de rôles.
@@ -291,6 +304,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: "4px", overflowY: "auto" }}>
             {navItems.filter((item) => !item.deprecated).map((item) => {
               const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
@@ -309,7 +323,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     transition: "all 0.15s",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>{item.icon}</span>
+                  <Icon size={18} strokeWidth={2} />
                   {item.label}
                 </Link>
               );
@@ -323,6 +337,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
                 {navItems.filter((item) => item.deprecated).map((item) => {
                   const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.href}
@@ -341,7 +356,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         transition: "all 0.15s",
                       }}
                     >
-                      <span style={{ fontSize: "16px", opacity: 0.5 }}>{item.icon}</span>
+                      <Icon size={16} strokeWidth={2} style={{ opacity: 0.5 }} />
                       {item.label}
                     </Link>
                   );
