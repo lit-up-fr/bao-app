@@ -45,6 +45,26 @@ function getZone(score: number): { label: string; color: string } {
   return { label: "Zone critique", color: "#dc2626" };
 }
 
+function getColorHex(internalKey: "rose" | "jaune" | "bleu" | "vert", customLabel: string): string {
+  const defaults = { rose: "#f472b6", jaune: "#fbbf24", bleu: "#2563eb", vert: "#16a34a" };
+  const colorMap: Record<string, string> = {
+    marron: "#92400e", brun: "#78350f",
+    rouge: "#ef4444", "rouge foncé": "#b91c1c",
+    orange: "#f97316",
+    jaune: "#fbbf24",
+    rose: "#f472b6",
+    violet: "#7c3aed", mauve: "#a855f7", pourpre: "#9333ea",
+    bleu: "#2563eb", "bleu foncé": "#1e40af", "bleu clair": "#60a5fa",
+    vert: "#16a34a", "vert foncé": "#166534", "vert clair": "#86efac",
+    noir: "#374151",
+    blanc: "#d1d5db",
+    gris: "#9ca3af",
+    turquoise: "#0d9488",
+    cyan: "#06b6d4",
+  };
+  return colorMap[customLabel.toLowerCase().trim()] || defaults[internalKey];
+}
+
 function computeAnalyse(scores: Scores): Analyse {
   const forces: string[] = [];
   const neutres: string[] = [];
@@ -211,6 +231,7 @@ export default function AnalysePage() {
   const [customColorLabels, setCustomColorLabels] = useState<Record<string, string>>({
     rose: "", jaune: "", bleu: "", vert: "",
   });
+  const [aiAnalyzed, setAiAnalyzed] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
   // Étape 2 : Scores
@@ -443,8 +464,9 @@ ${jsonTemplate}`
         return;
       }
 
-      setAnalyse(computeAnalyse(scores));
-      setStep(3);
+      // Basculer en mode manuel pré-rempli pour vérification avant de générer l'analyse
+      setMode("manuel");
+      setAiAnalyzed(true);
     } catch (err) {
       console.error("Erreur analyse IA:", err);
       setAiError("Erreur lors de l'analyse. Vérifiez la qualité de l'image ou essayez la saisie manuelle.");
@@ -666,6 +688,15 @@ ${jsonTemplate}`
 
             {mode === "manuel" ? (
               <>
+                {aiAnalyzed && (
+                  <div style={{ background: "#eff6ff", border: "2px solid #bfdbfe", borderRadius: "12px", padding: "12px 16px", fontSize: "13px", color: "#1d4ed8", display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "18px", flexShrink: 0 }}>🤖</span>
+                    <div>
+                      <strong>Résultats détectés par l'IA</strong> — Vérifiez et corrigez les comptes ci-dessous si nécessaire (notamment pour distinguer les couleurs proches), puis cliquez sur "Générer l'analyse".
+                    </div>
+                  </div>
+                )}
+
                 <p style={{ fontSize: "13px", color: "var(--muted)", margin: 0 }}>
                   Pour chaque clé, indiquez le nombre de {materiel.toLowerCase()} de chaque couleur.
                 </p>
@@ -673,10 +704,16 @@ ${jsonTemplate}`
                 {/* Header */}
                 <div style={{ display: "grid", gridTemplateColumns: "140px repeat(4, 1fr)", gap: "6px", alignItems: "center" }}>
                   <div />
-                  <div style={{ textAlign: "center", fontSize: "11px", fontWeight: 700, color: "#f472b6" }}>🩷 {!codeRespect && customColorLabels.rose ? customColorLabels.rose : "Rose"}</div>
-                  <div style={{ textAlign: "center", fontSize: "11px", fontWeight: 700, color: "#d97706" }}>💛 {!codeRespect && customColorLabels.jaune ? customColorLabels.jaune : "Jaune"}</div>
-                  <div style={{ textAlign: "center", fontSize: "11px", fontWeight: 700, color: "#2563eb" }}>💙 {!codeRespect && customColorLabels.bleu ? customColorLabels.bleu : "Bleu"}</div>
-                  <div style={{ textAlign: "center", fontSize: "11px", fontWeight: 700, color: "#16a34a" }}>💚 {!codeRespect && customColorLabels.vert ? customColorLabels.vert : "Vert"}</div>
+                  {(["rose", "jaune", "bleu", "vert"] as const).map((key) => {
+                    const label = (!codeRespect && customColorLabels[key]) ? customColorLabels[key] : key;
+                    const hex = getColorHex(key, label);
+                    return (
+                      <div key={key} style={{ textAlign: "center", fontSize: "11px", fontWeight: 700, color: hex, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                        <span style={{ display: "inline-block", width: "12px", height: "12px", borderRadius: "50%", background: hex, flexShrink: 0 }} />
+                        {label.charAt(0).toUpperCase() + label.slice(1)}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {CLES.map((cle) => (
@@ -703,7 +740,7 @@ ${jsonTemplate}`
                 {aiError && <div style={{ color: "#dc2626", fontSize: "13px" }}>{aiError}</div>}
 
                 <div style={{ display: "flex", gap: "12px" }}>
-                  <button onClick={() => setStep(1)} style={{ padding: "10px 20px", background: "white", border: "2px solid var(--line-strong)", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--anthracite)" }}>
+                  <button onClick={() => { setStep(1); setAiAnalyzed(false); }} style={{ padding: "10px 20px", background: "white", border: "2px solid var(--line-strong)", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--anthracite)" }}>
                     ← Retour
                   </button>
                   <button onClick={handleManualSubmit} style={{ padding: "10px 28px", background: "var(--canard)", color: "white", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
