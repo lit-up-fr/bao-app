@@ -376,9 +376,11 @@ Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce fo
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `Erreur serveur ${response.status}`);
       const text = data.content?.map((c: any) => c.text || "").join("") || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean) as Record<string, { rose: number; jaune: number; bleu: number; vert: number }>;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("Aucun JSON trouvé dans la réponse");
+      const parsed = JSON.parse(jsonMatch[0]) as Record<string, { rose: number; jaune: number; bleu: number; vert: number }>;
 
       // Convertir en scores
       setManualScores(parsed);
