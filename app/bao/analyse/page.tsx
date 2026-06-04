@@ -346,6 +346,13 @@ export default function AnalysePage() {
       const base64 = compressed.split(",")[1];
       const mediaType = "image/jpeg";
 
+      // Utiliser les noms de couleurs réels visibles sur la photo
+      const c1 = (!codeRespect && customColorLabels.rose) ? customColorLabels.rose : "rose";
+      const c2 = (!codeRespect && customColorLabels.jaune) ? customColorLabels.jaune : "jaune";
+      const c3 = (!codeRespect && customColorLabels.bleu) ? customColorLabels.bleu : "bleu";
+      const c4 = (!codeRespect && customColorLabels.vert) ? customColorLabels.vert : "vert";
+      const jsonTemplate = `{"Sens":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Liberté":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Plaisir":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Action":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Progression":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Utilité":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Sécurité":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Considération":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Confiance":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Batterie":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0}}`;
+
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -361,14 +368,14 @@ export default function AnalysePage() {
               },
               {
                 type: "text",
-                text: `Analyse cette image d'un baromètre de l'engagement. L'image montre des ${materiel.toLowerCase()} de 4 couleurs (rose, jaune, bleu, vert) répartis sur 10 clés de motivation : Sens, Liberté, Plaisir, Action, Progression, Utilité, Sécurité, Considération, Confiance, Batterie.
+                text: `Analyse cette image d'un baromètre de l'engagement. L'image montre des ${materiel.toLowerCase()} de 4 couleurs (${c1}, ${c2}, ${c3}, ${c4}) répartis sur 10 clés de motivation : Sens, Liberté, Plaisir, Action, Progression, Utilité, Sécurité, Considération, Confiance, Batterie.
 
 Il y a ${nbJeunes || "?"} participants. Chaque participant a déposé un ${materiel.toLowerCase().replace(/s$/, "")} sur chaque clé.
 
 Compte le nombre de ${materiel.toLowerCase()} de chaque couleur pour chaque clé.
 
 Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce format exact :
-{"Sens":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Liberté":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Plaisir":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Action":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Progression":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Utilité":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Sécurité":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Considération":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Confiance":{"rose":0,"jaune":0,"bleu":0,"vert":0},"Batterie":{"rose":0,"jaune":0,"bleu":0,"vert":0}}`
+${jsonTemplate}`
               },
             ],
           }],
@@ -380,7 +387,18 @@ Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce fo
       const text = data.content?.map((c: any) => c.text || "").join("") || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("Aucun JSON trouvé dans la réponse");
-      const parsed = JSON.parse(jsonMatch[0]) as Record<string, { rose: number; jaune: number; bleu: number; vert: number }>;
+      const rawParsed = JSON.parse(jsonMatch[0]) as Record<string, Record<string, number>>;
+
+      // Remapper les clés couleur personnalisées → clés internes (rose/jaune/bleu/vert = positions 1-4)
+      const parsed: Record<string, { rose: number; jaune: number; bleu: number; vert: number }> = {};
+      Object.entries(rawParsed).forEach(([cle, counts]) => {
+        parsed[cle] = {
+          rose: counts[c1] ?? 0,
+          jaune: counts[c2] ?? 0,
+          bleu: counts[c3] ?? 0,
+          vert: counts[c4] ?? 0,
+        };
+      });
 
       // Convertir en scores
       setManualScores(parsed);
