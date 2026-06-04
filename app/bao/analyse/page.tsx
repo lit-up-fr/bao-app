@@ -353,6 +353,29 @@ export default function AnalysePage() {
       const c4 = (!codeRespect && customColorLabels.vert) ? customColorLabels.vert : "vert";
       const jsonTemplate = `{"Sens":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Liberté":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Plaisir":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Action":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Progression":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Utilité":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Sécurité":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Considération":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Confiance":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0},"Batterie":{"${c1}":0,"${c2}":0,"${c3}":0,"${c4}":0}}`;
 
+      const contextePhysique = (() => {
+        const m = materiel.toLowerCase();
+        const unite = m.replace(/s$/, "");
+        const couleurs = `${c1}, ${c2}, ${c3}, ${c4}`;
+        const nb = nbJeunes || "?";
+        if (m === "jetons") return `- Il y a 10 cartes blanches disposées en grille avec un titre en majuscules (SENS, LIBERTÉ, PLAISIR, ACTION, PROGRESSION, UTILITÉ, SÉCURITÉ, CONSIDÉRATION, CONFIANCE, BATTERIE).
+- Sur chaque carte sont posés directement des jetons ronds colorés (${couleurs}).
+- Il y a ${nb} participants. Chaque participant a déposé 1 jeton par carte.
+- Compte les jetons de chaque couleur directement sur chaque carte.`;
+        if (m === "gommettes") return `- Il y a 10 cartes blanches disposées en grille avec un titre en majuscules (SENS, LIBERTÉ, PLAISIR, ACTION, PROGRESSION, UTILITÉ, SÉCURITÉ, CONSIDÉRATION, CONFIANCE, BATTERIE).
+- Sur chaque carte est posé un post-it (de n'importe quelle couleur).
+- Sur chaque post-it se trouvent de petites gommettes rondes colorées (${couleurs}).
+- Il y a ${nb} participants. Chaque participant a collé 1 gommette par post-it.
+- Compte les gommettes de chaque couleur sur le post-it de chaque carte. Ignore la couleur du post-it lui-même.`;
+        if (m === "feutres") return `- Il y a 10 cartes blanches disposées en grille avec un titre en majuscules (SENS, LIBERTÉ, PLAISIR, ACTION, PROGRESSION, UTILITÉ, SÉCURITÉ, CONSIDÉRATION, CONFIANCE, BATTERIE).
+- À côté de chaque carte se trouve une feuille blanche avec des marques de feutres (croix ou ronds) de différentes couleurs (${couleurs}).
+- Il y a ${nb} participants. Chaque participant a tracé 1 marque par feuille.
+- Compte les marques de feutres de chaque couleur sur la feuille associée à chaque carte.`;
+        return `- Il y a 10 cartes ou zones avec un titre (SENS, LIBERTÉ, PLAISIR, ACTION, PROGRESSION, UTILITÉ, SÉCURITÉ, CONSIDÉRATION, CONFIANCE, BATTERIE).
+- Pour chaque carte/zone, des indicateurs de 4 couleurs (${couleurs}) représentent les réponses de ${nb} participants.
+- Compte le nombre d'indicateurs de chaque couleur pour chaque carte/zone.`;
+      })();
+
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -368,19 +391,15 @@ export default function AnalysePage() {
               },
               {
                 type: "text",
-                text: `Tu dois compter des ${materiel.toLowerCase()} colorés sur un baromètre de l'engagement.
+                text: `Tu dois analyser un baromètre de l'engagement (matériel : ${materiel}).
 
 CONTEXTE PHYSIQUE :
-- Il y a 10 cartes blanches disposées en grille, chacune avec un titre en majuscules : SENS, LIBERTÉ, PLAISIR, ACTION, PROGRESSION, UTILITÉ, SÉCURITÉ, CONSIDÉRATION, CONFIANCE, BATTERIE (ou un équivalent partiellement visible).
-- Sur chaque carte est posé un post-it orange.
-- Sur chaque post-it orange se trouvent des petits ${materiel.toLowerCase()} ronds de 4 couleurs possibles : ${c1}, ${c2}, ${c3}, ${c4}.
-- Il y a ${nbJeunes || "?"} participants au total. Chaque participant a déposé exactement 1 ${materiel.toLowerCase().replace(/s$/, "")} par carte.
+${contextePhysique}
 
 INSTRUCTIONS :
 1. Identifie chaque carte par son titre visible.
-2. Pour chaque carte, compte soigneusement le nombre de ${materiel.toLowerCase()} de chaque couleur sur le post-it orange.
-3. Ignore le fond, les décorations des cartes et les post-its eux-mêmes — compte UNIQUEMENT les petits points colorés.
-4. Si une carte est partiellement masquée, fais de ton mieux pour compter les points visibles.
+2. Pour chaque carte, compte soigneusement le nombre d'éléments de chaque couleur.
+3. Si une carte est partiellement masquée, fais de ton mieux avec ce qui est visible.
 
 Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks, avec ce format exact :
 ${jsonTemplate}`
