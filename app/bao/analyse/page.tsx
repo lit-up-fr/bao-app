@@ -358,7 +358,7 @@ export default function AnalysePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
-          max_tokens: 1000,
+          max_tokens: 2000,
           messages: [{
             role: "user",
             content: [
@@ -368,13 +368,21 @@ export default function AnalysePage() {
               },
               {
                 type: "text",
-                text: `Analyse cette image d'un baromètre de l'engagement. L'image montre des ${materiel.toLowerCase()} de 4 couleurs (${c1}, ${c2}, ${c3}, ${c4}) répartis sur 10 clés de motivation : Sens, Liberté, Plaisir, Action, Progression, Utilité, Sécurité, Considération, Confiance, Batterie.
+                text: `Tu dois compter des ${materiel.toLowerCase()} colorés sur un baromètre de l'engagement.
 
-Il y a ${nbJeunes || "?"} participants. Chaque participant a déposé un ${materiel.toLowerCase().replace(/s$/, "")} sur chaque clé.
+CONTEXTE PHYSIQUE :
+- Il y a 10 cartes blanches disposées en grille, chacune avec un titre en majuscules : SENS, LIBERTÉ, PLAISIR, ACTION, PROGRESSION, UTILITÉ, SÉCURITÉ, CONSIDÉRATION, CONFIANCE, BATTERIE (ou un équivalent partiellement visible).
+- Sur chaque carte est posé un post-it orange.
+- Sur chaque post-it orange se trouvent des petits ${materiel.toLowerCase()} ronds de 4 couleurs possibles : ${c1}, ${c2}, ${c3}, ${c4}.
+- Il y a ${nbJeunes || "?"} participants au total. Chaque participant a déposé exactement 1 ${materiel.toLowerCase().replace(/s$/, "")} par carte.
 
-Compte le nombre de ${materiel.toLowerCase()} de chaque couleur pour chaque clé.
+INSTRUCTIONS :
+1. Identifie chaque carte par son titre visible.
+2. Pour chaque carte, compte soigneusement le nombre de ${materiel.toLowerCase()} de chaque couleur sur le post-it orange.
+3. Ignore le fond, les décorations des cartes et les post-its eux-mêmes — compte UNIQUEMENT les petits points colorés.
+4. Si une carte est partiellement masquée, fais de ton mieux pour compter les points visibles.
 
-Réponds UNIQUEMENT en JSON valide, sans backticks, sans commentaire, avec ce format exact :
+Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks, avec ce format exact :
 ${jsonTemplate}`
               },
             ],
