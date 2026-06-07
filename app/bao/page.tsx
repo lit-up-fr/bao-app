@@ -266,6 +266,10 @@ export default function BaoPage() {
   return (
     <>
       <style>{`
+        /* Le wrapper du héro est transparent en desktop : emoji, corps et CTA
+           restent des enfants directs du flex du bouton (rendu inchangé). */
+        .bao-hero-top { display: contents; }
+
         @media (max-width: 768px) {
           .bao-main-grid { grid-template-columns: 1fr !important; }
           .bao-results { padding: 16px !important; padding-bottom: 100px !important; }
@@ -281,9 +285,16 @@ export default function BaoPage() {
           .diag-cards-grid > div { padding: 20px 16px !important; flex-direction: row !important; text-align: left !important; }
           .diag-cards-grid > button > span:first-child,
           .diag-cards-grid > div > span:first-child { font-size: 28px !important; }
+
+          /* ── Héro diagnostic : empilé sur mobile ── */
+          .bao-hero { flex-direction: column !important; align-items: stretch !important; gap: 16px !important; padding: 18px 18px 20px !important; }
+          .bao-hero-top { display: flex !important; align-items: center !important; gap: 14px !important; }
+          .bao-hero-emoji { font-size: 40px !important; }
+          .bao-hero-cta { width: 100% !important; padding: 13px 18px !important; font-size: 15px !important; }
         }
         @media (max-width: 480px) {
           .bao-top-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .bao-hero-desc { font-size: 12px !important; }
         }
       `}</style>
 
@@ -346,6 +357,7 @@ export default function BaoPage() {
                     {obj1 && (
                       <button
                         onClick={() => selectObjectif(obj1)}
+                        className="bao-hero"
                         style={{
                           width: "100%",
                           background: obj1Active
@@ -375,19 +387,22 @@ export default function BaoPage() {
                           (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(0, 152, 157, 0.2)";
                         }}
                       >
-                        <span style={{ fontSize: "52px", lineHeight: 1, flexShrink: 0 }}>{obj1.emoji || "🔍"}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1px", opacity: 0.85, marginBottom: "4px" }}>
-                            ÉTAPE 1 — POINT DE DÉPART
-                          </div>
-                          <div style={{ fontSize: "20px", fontWeight: 800, marginBottom: "4px", letterSpacing: "-0.01em" }}>
-                            {obj1.nom}
-                          </div>
-                          <div style={{ fontSize: "13px", opacity: 0.95, lineHeight: 1.4 }}>
-                            Avant tout, identifiez les leviers et freins de motivation de votre groupe. Toute la BAO s&apos;articule autour de ce diagnostic.
+                        {/* Wrapper transparent en desktop (display:contents), empilé en mobile */}
+                        <div className="bao-hero-top">
+                          <span className="bao-hero-emoji" style={{ fontSize: "52px", lineHeight: 1, flexShrink: 0 }}>{obj1.emoji || "🔍"}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1px", opacity: 0.85, marginBottom: "4px" }}>
+                              ÉTAPE 1 — POINT DE DÉPART
+                            </div>
+                            <div style={{ fontSize: "20px", fontWeight: 800, marginBottom: "4px", letterSpacing: "-0.01em" }}>
+                              {obj1.nom}
+                            </div>
+                            <div className="bao-hero-desc" style={{ fontSize: "13px", opacity: 0.95, lineHeight: 1.4 }}>
+                              Avant tout, identifiez les leviers et freins de motivation de votre groupe. Toute la BAO s&apos;articule autour de ce diagnostic.
+                            </div>
                           </div>
                         </div>
-                        <div style={{
+                        <div className="bao-hero-cta" style={{
                           background: "white",
                           color: "var(--canard)",
                           padding: "10px 18px",
@@ -397,6 +412,7 @@ export default function BaoPage() {
                           flexShrink: 0,
                           display: "flex",
                           alignItems: "center",
+                          justifyContent: "center",
                           gap: "8px",
                           whiteSpace: "nowrap",
                         }}>
