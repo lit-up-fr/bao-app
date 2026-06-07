@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signUp, SignUpData } from "@/lib/auth";
+import { signUp, logAuthError, SignUpData } from "@/lib/auth";
 import Link from "next/link";
 
 const CATEGORIES_PRO = [
@@ -180,6 +180,9 @@ export default function InscriptionPage() {
       ) {
         msg = (e as { message: string }).message;
       }
+
+      // Journalise l'erreur pour les alertes admin (ne bloque pas si ça échoue).
+      logAuthError("signup", form.email, msg);
 
       if (/already registered|already been registered/i.test(msg)) {
         setError("Un compte existe déjà avec cet email");
