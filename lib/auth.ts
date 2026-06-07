@@ -47,37 +47,71 @@ export interface SignUpData {
 
 // Inscription
 export async function signUp(data: SignUpData) {
+  // Les données de profil sont passées en métadonnées (raw_user_meta_data).
+  // Le trigger serveur on_auth_user_created (migration
+  // auto_create_profile_on_signup) crée le profil à partir de ces métadonnées,
+  // ce qui fonctionne même quand la confirmation d'email est activée (auth.signUp
+  // ne renvoie alors pas de session et un INSERT direct serait bloqué par le RLS).
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
+    options: {
+      data: {
+        prenom: data.prenom,
+        nom: data.nom,
+        telephone: data.telephone || "",
+        structure: data.structure || "",
+        poste: data.poste || "",
+        code_postal: data.code_postal || "",
+        categorie_pro: data.categorie_pro,
+        categorie_pro_autre: data.categorie_pro_autre || "",
+        region: data.region || "",
+        tranche_age: data.tranche_age || "",
+        public_accompagne: data.public_accompagne || "",
+        newsletter_consent: data.newsletter_consent,
+      },
+    },
   });
 
   if (authError) throw authError;
   if (!authData.user) throw new Error("Erreur lors de la création du compte");
 
-  // Créer le profil
-  const { error: profileError } = await supabase.from("profiles").insert({
-    id: authData.user.id,
-    email: data.email,
-    prenom: data.prenom,
-    nom: data.nom,
-    telephone: data.telephone || null,
-    structure: data.structure || null,
-    poste: data.poste || null,
-    code_postal: data.code_postal || null,
-    categorie_pro: data.categorie_pro,
-    categorie_pro_autre: data.categorie_pro_autre || null,
-    region: data.region || null,
-    tranche_age: data.tranche_age || null,
-    public_accompagne: data.public_accompagne || null,
-    newsletter_consent: data.newsletter_consent,
-    cgu_accepted_at: new Date().toISOString(),
-    privacy_accepted_at: new Date().toISOString(),
-    status: "en_attente",
-    is_admin: false,
-  });
+  // Si une session est immédiatement disponible (confirmation d'email
+  // désactivée), on complète le profil créé par le trigger via un upsert pour
+  // refléter l'intégralité des données saisies. En l'absence de session
+  // (confirmation activée), le client reste « anon » : on ne tente pas l'écriture
+  // (elle serait refusée par le RLS) et on s'appuie sur le trigger serveur.
+  if (authData.session) {
+    const { error: profileError } = await supabase.from("profiles").upsert(
+      {
+        id: authData.user.id,
+        email: data.email,
+        prenom: data.prenom,
+        nom: data.nom,
+        telephone: data.telephone || null,
+        structure: data.structure || null,
+        poste: data.poste || null,
+        code_postal: data.code_postal || null,
+        categorie_pro: data.categorie_pro,
+        categorie_pro_autre: data.categorie_pro_autre || null,
+        region: data.region || null,
+        tranche_age: data.tranche_age || null,
+        public_accompagne: data.public_accompagne || null,
+        newsletter_consent: data.newsletter_consent,
+        cgu_accepted_at: new Date().toISOString(),
+        privacy_accepted_at: new Date().toISOString(),
+        status: "en_attente",
+        is_admin: false,
+      },
+      { onConflict: "id" }
+    );
 
-  if (profileError) throw profileError;
+    // Le profil a déjà été créé par le trigger : un échec ici (ex. RLS) ne doit
+    // pas faire échouer l'inscription, on se contente de le tracer.
+    if (profileError) {
+      console.error("signUp upsert profile:", profileError.message);
+    }
+  }
 
   return authData;
 }
