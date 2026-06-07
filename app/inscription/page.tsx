@@ -166,10 +166,27 @@ export default function InscriptionPage() {
 
       router.push("/inscription/confirmation");
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error ? e.message : "Une erreur est survenue";
-      if (msg.includes("already registered")) {
+      // Les erreurs Supabase (AuthError, PostgrestError) ne sont pas toujours des
+      // instances de Error : on extrait le message dès qu'il est disponible pour
+      // ne pas masquer la vraie cause derrière un message générique.
+      let msg = "Une erreur est survenue";
+      if (e instanceof Error) {
+        msg = e.message;
+      } else if (
+        e &&
+        typeof e === "object" &&
+        "message" in e &&
+        typeof (e as { message: unknown }).message === "string"
+      ) {
+        msg = (e as { message: string }).message;
+      }
+
+      if (/already registered|already been registered/i.test(msg)) {
         setError("Un compte existe déjà avec cet email");
+      } else if (/email rate limit|rate limit exceeded/i.test(msg)) {
+        setError(
+          "Trop de demandes d'inscription pour le moment. Merci de réessayer dans quelques minutes."
+        );
       } else {
         setError(msg);
       }
