@@ -284,10 +284,9 @@ export default function AdminUtilisateursPage() {
         />
       </div>
 
-      {/* Table + Detail panel */}
-      <div style={{ display: "flex", gap: "20px" }}>
-        {/* Table */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Table */}
+      <div>
+        <div style={{ minWidth: 0 }}>
           <div
             style={{
               background: "white",
@@ -458,19 +457,33 @@ export default function AdminUtilisateursPage() {
           </div>
         </div>
 
-        {/* Detail panel */}
+        {/* Detail modal */}
         {selectedProfile && (
           <div
+            onClick={() => setSelectedProfile(null)}
             style={{
-              width: "320px",
-              flexShrink: 0,
+              position: "fixed",
+              inset: 0,
+              background: "rgba(43, 52, 66, 0.6)",
+              zIndex: 100,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+            }}
+          >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "440px",
+              maxHeight: "88vh",
+              overflowY: "auto",
               background: "white",
-              borderRadius: "12px",
+              borderRadius: "16px",
               border: "1px solid #e5e7eb",
               padding: "24px",
-              alignSelf: "flex-start",
-              position: "sticky",
-              top: "20px",
+              animation: "modalIn 0.3s ease",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
@@ -664,6 +677,7 @@ export default function AdminUtilisateursPage() {
                 </button>
               </div>
             )}
+          </div>
           </div>
         )}
       </div>
