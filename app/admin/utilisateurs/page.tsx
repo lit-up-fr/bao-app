@@ -63,19 +63,17 @@ export default function AdminUtilisateursPage() {
         const user = profiles.find((p) => p.id === userId);
         if (user && !user.is_admin) {
           try {
-            const emailRes = await fetch(
-              "https://odadaqpihvcnuprkdchr.supabase.co/functions/v1/send-welcome-email",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: user.email, prenom: user.prenom }),
-              }
-            );
-            const emailData = await emailRes.json();
-            if (emailRes.ok) {
+            // On passe par le client Supabase (functions.invoke) plut\u00f4t que par
+            // un fetch brut : il joint automatiquement le JWT de l'admin connect\u00e9
+            // et la cl\u00e9 apikey, ce qui satisfait verify_jwt = true sur la fonction.
+            const { data: emailData, error: emailError } =
+              await supabase.functions.invoke("send-welcome-email", {
+                body: { email: user.email, prenom: user.prenom },
+              });
+            if (!emailError) {
               alert("Email de bienvenue envoy\u00e9 \u00e0 " + user.email + " !");
             } else {
-              console.error("Erreur envoi email:", emailData);
+              console.error("Erreur envoi email:", emailError, emailData);
               alert("Utilisateur approuv\u00e9, mais l'email n'a pas pu \u00eatre envoy\u00e9. Vous pouvez le contacter manuellement.");
             }
           } catch (emailErr) {

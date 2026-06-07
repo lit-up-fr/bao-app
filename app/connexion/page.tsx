@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn, getProfileByUserId } from "@/lib/auth";
+import { signIn, getProfileByUserId, logAuthError } from "@/lib/auth";
 import Link from "next/link";
 
 export default function ConnexionPage() {
@@ -50,6 +50,8 @@ export default function ConnexionPage() {
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erreur de connexion";
+      // Journalise l'erreur pour les alertes admin (ne bloque pas si ça échoue).
+      logAuthError("login", email, msg);
       if (msg.includes("Invalid login")) {
         setError("invalid_login");
       } else {

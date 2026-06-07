@@ -252,9 +252,108 @@ export async function updateProfileRoles(
 }
 
 export async function deleteUserCompletely(userId: string) {
-  const { error } = await supabase.rpc("delete_user_completely", {
+  // Passe par le wrapper admin_delete_user (vérifie is_admin() côté serveur),
+  // car delete_user_completely n'est plus exécutable par le rôle authenticated.
+  const { error } = await supabase.rpc("admin_delete_user", {
     target_user_id: userId,
   });
+  if (error) throw error;
+}
+
+// === Journalisation des erreurs d'authentification (alertes admin) ===
+
+export type AuthErrorKind = "signup" | "login";
+
+export interface AuthErrorLog {
+  id: string;
+  kind: AuthErrorKind;
+  email: string | null;
+  message: string | null;
+  is_system: boolean;
+  seen: boolean;
+  created_at: string;
+}
+
+// Erreurs « normales » (comportement utilisateur attendu) : on les journalise
+// mais sans déclencher d'alerte système (is_system = false).
+function isExpectedAuthError(message: string): boolean {
+  const m = (message || "").toLowerCase();
+  return (
+    m.includes("invalid login") ||
+    m.includes("invalid credentials") ||
+    m.includes("already registered") ||
+    m.includes("already been registered") ||
+    m.includes("user already exists") ||
+    m.includes("email not confirmed") ||
+    m.includes("rate limit") ||
+    m.includes("password should be")
+  );
+}
+
+// À appeler depuis les pages d'inscription / connexion en cas d'erreur.
+// Ne lève jamais : la journalisation ne doit pas casser le flux.
+export async function logAuthError(
+  kind: AuthErrorKind,
+  email: string,
+  message: string
+) {
+  try {
+    await supabase.rpc("log_auth_error", {
+      p_kind: kind,
+      p_email: email || "",
+      p_message: message || "",
+      p_is_system: !isExpectedAuthError(message),
+    });
+  } catch (e) {
+    console.error("logAuthError:", e);
+  }
+}
+
+export async function getAuthErrorLogs(limit = 200): Promise<AuthErrorLog[]> {
+  const { data, error } = await supabase
+    .from("auth_error_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("getAuthErrorLogs error:", error.message);
+    return [];
+  }
+  return (data as AuthErrorLog[]) || [];
+}
+
+// Nombre d'alertes système non lues (pour le badge de la sidebar).
+export async function getUnseenSystemAlertCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("auth_error_logs")
+    .select("*", { count: "exact", head: true })
+    .eq("is_system", true)
+    .eq("seen", false);
+  if (error) return 0;
+  return count || 0;
+}
+
+export async function markAuthErrorSeen(id: string, seen = true) {
+  const { error } = await supabase
+    .from("auth_error_logs")
+    .update({ seen })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function markAllAuthErrorsSeen() {
+  const { error } = await supabase
+    .from("auth_error_logs")
+    .update({ seen: true })
+    .eq("seen", false);
+  if (error) throw error;
+}
+
+export async function deleteAuthErrorLog(id: string) {
+  const { error } = await supabase
+    .from("auth_error_logs")
+    .delete()
+    .eq("id", id);
   if (error) throw error;
 }
 

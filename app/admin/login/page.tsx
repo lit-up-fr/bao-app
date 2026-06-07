@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { logAuthError } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,7 @@ export default function AdminLoginPage() {
     });
 
     if (authError) {
+      logAuthError("login", email, authError.message);
       setError("Email ou mot de passe incorrect.");
       setLoading(false);
       return;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { getProfileByUserId, Profile } from "@/lib/auth";
+import { getProfileByUserId, getUnseenSystemAlertCount, Profile } from "@/lib/auth";
 import type { User } from "@supabase/supabase-js";
 import {
   LayoutDashboard,
@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Map,
   MapPin,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,6 +49,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: "/admin/cles", label: "Clés d'engagement", icon: Key, roles: ["super_admin", "editor"] },
   // Gestion des utilisateurs (Modérateur)
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users, roles: ["super_admin", "moderator"] },
+  // Alertes d'erreurs d'inscription / connexion (Modérateur)
+  { href: "/admin/alertes", label: "Alertes", icon: AlertTriangle, roles: ["super_admin", "moderator"] },
   // Validation pédagogique : Propositions + Analyses IA (Responsable validation pédago)
   { href: "/admin/propositions", label: "Propositions", icon: Lightbulb, roles: ["super_admin", "pedagogical_reviewer"] },
   { href: "/admin/analyses-ia", label: "Analyses IA", icon: Bot, roles: ["super_admin", "pedagogical_reviewer"] },
@@ -88,6 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -123,6 +127,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           router.push("/bao");
           return;
         }
+
+        // Nombre d'alertes système non lues (pour le badge de la sidebar).
+        getUnseenSystemAlertCount().then(setAlertCount).catch(() => {});
       } else if (!isLoginPage) {
         router.push("/admin/login");
       }
@@ -152,10 +159,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [pathname, adminRoles, loading, profile, router, isLoginPage]);
 
-  // Fermer le menu quand on change de page
+  // Fermer le menu quand on change de page + rafraîchir le compteur d'alertes
   useEffect(() => {
     setMenuOpen(false);
-  }, [pathname]);
+    if (profile?.is_admin) {
+      getUnseenSystemAlertCount().then(setAlertCount).catch(() => {});
+    }
+  }, [pathname, profile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -324,7 +334,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   }}
                 >
                   <Icon size={18} strokeWidth={2} color={isActive ? "white" : "#FCC33D"} />
-                  {item.label}
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {item.href === "/admin/alertes" && alertCount > 0 && (
+                    <span
+                      style={{
+                        background: "#dc2626",
+                        color: "white",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        minWidth: "18px",
+                        height: "18px",
+                        borderRadius: "9px",
+                        padding: "0 5px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {alertCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
