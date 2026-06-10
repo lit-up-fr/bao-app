@@ -5,6 +5,22 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+/**
+ * En-têtes pour les appels aux routes serveur `/api/*`.
+ * Joint le jeton de session (`Authorization: Bearer …`) afin que la route
+ * puisse authentifier l'appelant côté serveur (cf. lib/auth-server.ts).
+ */
+export async function authHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  return headers;
+}
+
 // ---------- Types (vrais schémas Supabase) ----------
 
 export interface Fiche {

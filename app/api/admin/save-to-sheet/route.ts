@@ -4,6 +4,7 @@
 // comme une ligne dans le Google Sheet "Analyses validées".
 
 import { NextRequest } from "next/server";
+import { getServerAuthContext } from "@/lib/auth-server";
 
 const APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL;
 const APPS_SCRIPT_TOKEN = process.env.GOOGLE_APPS_SCRIPT_TOKEN;
@@ -33,6 +34,15 @@ interface SaveToSheetPayload {
 
 export async function POST(req: NextRequest) {
   try {
+    // ─── Réservé aux administrateurs authentifiés ───
+    const auth = await getServerAuthContext(req);
+    if (!auth.user) {
+      return Response.json({ error: "Authentification requise" }, { status: 401 });
+    }
+    if (!auth.isAdmin) {
+      return Response.json({ error: "Action réservée aux administrateurs" }, { status: 403 });
+    }
+
     if (!APPS_SCRIPT_URL || !APPS_SCRIPT_TOKEN) {
       return Response.json(
         { error: "Apps Script non configuré. Vérifie GOOGLE_APPS_SCRIPT_URL et GOOGLE_APPS_SCRIPT_TOKEN dans .env.local" },
@@ -41,7 +51,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as SaveToSheetPayload;
-    const { analyseId, analyseMeta, paragraphs, reviewerEmail, finalStatus } = body;
+    const { analyseId, analyseMeta, paragraphs, finalStatus } = body;
+    // Le relecteur est l'admin authentifié, jamais une valeur fournie par le client.
+    const reviewerEmail = auth.user.email || body.reviewerEmail || "";
 
     if (finalStatus === "rejected") {
       return Response.json({ ok: true, inserted: 0, skipped: "rejected (no sheet write)" });

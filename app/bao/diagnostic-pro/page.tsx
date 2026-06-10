@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, authHeaders } from "@/lib/supabase";
 import AppHeader from "@/components/AppHeader";
 import Link from "next/link";
 
@@ -380,7 +380,7 @@ Génère une analyse personnalisée en respectant strictement la posture défini
 
       const apiRes = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({
           messages: [{ role: "user", content: prompt }],
           // ⚠️ Plus besoin de `system` ici : la route /api/analyze construit
@@ -499,7 +499,7 @@ Génère une analyse personnalisée en respectant strictement la posture défini
       const history = [...chatMessages, { role: "user" as const, content: userMsg }];
       const apiRes = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({
           messages: history,
           system: `Expert engagement jeunes (Lit uP). Contexte : ${ctx.type_accompagnement}, ${ctx.type_organisation}, âges ${ctx.tranches_age.join(", ")}, volontariat: ${ctx.volontariat}. Clés fortes : ${results.filter(r => r.zone === "appui").map(r => r.nom).join(", ")}. Clés à travailler : ${results.filter(r => r.zone === "travailler").map(r => r.nom).join(", ")}. Réponds en français, concis et utile. Commence par les forces.`

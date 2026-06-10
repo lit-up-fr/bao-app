@@ -11,6 +11,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { google } from "googleapis";
 import { createClient } from "@supabase/supabase-js";
+import { getServerAuthContext } from "@/lib/auth-server";
 
 export const maxDuration = 60; // Vercel : timeout 60s (la lecture du corpus peut prendre du temps)
 
@@ -473,6 +474,19 @@ async function checkUserQuota(userId: string | undefined): Promise<{ allowed: bo
 
 export async function POST(req: Request) {
   try {
+    // ─── Authentification obligatoire ───
+    // Cette route relaie l'API Claude avec une clé serveur : l'exposer
+    // publiquement = proxy LLM ouvert (abus de coût) + pollution des données.
+    // On exige une session valide ET un compte actif, et on dérive l'identité
+    // du serveur (jamais du corps de la requête).
+    const auth = await getServerAuthContext(req);
+    if (!auth.user) {
+      return Response.json({ error: "Authentification requise" }, { status: 401 });
+    }
+    if (!auth.isAdmin && !auth.isActive) {
+      return Response.json({ error: "Compte non validé" }, { status: 403 });
+    }
+
     const body = (await req.json()) as AnalysisRequest;
     const {
       messages,
@@ -497,8 +511,13 @@ export async function POST(req: Request) {
     if (diagnosticContext) {
       const typeAccompagnement = diagnosticContext.contexte; // "individuel" | "collectif" | "les_deux"
 
+      // ─── Identité : toujours celle de la session serveur, jamais celle du corps ───
+      // (empêche d'usurper un autre utilisateur et de contourner le quota mensuel).
+      (diagnosticContext as any).user_id = auth.user.id;
+      (diagnosticContext as any).user_email = auth.user.email;
+
       // ─── Vérifier le quota mensuel de l'utilisateur ───
-      const userId = (diagnosticContext as any).user_id || undefined;
+      const userId = auth.user.id;
       const quotaCheck = await checkUserQuota(userId);
       if (!quotaCheck.allowed) {
         return Response.json({

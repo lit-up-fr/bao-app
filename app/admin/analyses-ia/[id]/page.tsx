@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { supabase, authHeaders } from "@/lib/supabase";
 import {
   Calendar,
   User,
@@ -436,7 +436,7 @@ export default function AnalysesIADetailPage() {
 
       const res = await fetch("/api/admin/save-to-sheet", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify(payload),
       });
 

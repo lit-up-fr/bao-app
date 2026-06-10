@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { supabase, authHeaders } from "@/lib/supabase";
 import AppHeader from "@/components/AppHeader";
 
 /* ── Constantes ── */
@@ -399,7 +399,7 @@ export default function AnalysePage() {
 
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 2000,
