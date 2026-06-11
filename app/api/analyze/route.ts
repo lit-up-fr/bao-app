@@ -805,11 +805,9 @@ ${system ? `\nINSTRUCTIONS SPÉCIFIQUES :\n${system}` : ""}`;
     });
   } catch (error: any) {
     console.error("❌ Erreur /api/analyze:", error);
+    // Ne pas exposer les détails internes (message brut / stack) au client.
     return Response.json(
-      {
-        error: error.message || "Erreur serveur",
-        details: error.toString(),
-      },
+      { error: "Erreur serveur lors de l'analyse." },
       { status: 500 }
     );
   }
