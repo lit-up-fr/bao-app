@@ -68,7 +68,7 @@ export default function AdminUtilisateursPage() {
             // et la cl\u00e9 apikey, ce qui satisfait verify_jwt = true sur la fonction.
             const { data: emailData, error: emailError } =
               await supabase.functions.invoke("send-welcome-email", {
-                body: { email: user.email, prenom: user.prenom },
+                body: { email: user.email, prenom: user.prenom, userId: user.id },
               });
             if (!emailError) {
               alert("Email de bienvenue envoy\u00e9 \u00e0 " + user.email + " !");

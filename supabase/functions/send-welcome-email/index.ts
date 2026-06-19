@@ -4,6 +4,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+// Clé service-role : permet de confirmer l'email d'un utilisateur côté Auth
+// (admin.updateUserById). Sans elle, un compte validé par l'admin reste bloqué
+// à la connexion tant qu'il n'a pas cliqué le lien de confirmation reçu à
+// l'inscription. La validation admin fait office de vérification équivalente.
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 // Origines autorisées à appeler la fonction depuis le navigateur.
 const ALLOWED_ORIGINS = ["https://bao.lit-up.fr", "http://localhost:3000"];
@@ -69,13 +74,64 @@ serve(async (req) => {
       });
     }
 
-    const { email, prenom } = await req.json();
+    const { email, prenom, userId } = await req.json();
 
     if (!email || !prenom) {
       return new Response(JSON.stringify({ error: "email et prenom requis" }), {
         status: 400,
         headers: jsonHeaders,
       });
+    }
+
+    // ─── Confirmer l'email côté Auth ───
+    // L'approbation admin vaut vérification : on confirme donc l'email pour que
+    // l'utilisateur puisse se connecter immédiatement, sans avoir à cliquer le
+    // lien de confirmation envoyé à l'inscription (souvent perdu / dans les spams).
+    // Idempotent : confirmer un email déjà confirmé ne pose pas de problème.
+    let emailConfirmed = false;
+    if (SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+
+        // On a besoin de l'id Auth. Si l'appelant ne l'a pas fourni, on le
+        // retrouve à partir de l'email.
+        let targetId: string | null = userId || null;
+        if (!targetId) {
+          // listUsers est paginé : on parcourt jusqu'à trouver l'email.
+          for (let page = 1; page <= 20 && !targetId; page++) {
+            const { data: list, error: listErr } =
+              await admin.auth.admin.listUsers({ page, perPage: 200 });
+            if (listErr || !list?.users?.length) break;
+            const match = list.users.find(
+              (u) => (u.email || "").toLowerCase() === email.toLowerCase()
+            );
+            if (match) targetId = match.id;
+            if (list.users.length < 200) break; // dernière page
+          }
+        }
+
+        if (targetId) {
+          const { error: confirmErr } = await admin.auth.admin.updateUserById(
+            targetId,
+            { email_confirm: true }
+          );
+          if (confirmErr) {
+            console.error("Erreur confirmation email:", confirmErr.message);
+          } else {
+            emailConfirmed = true;
+          }
+        } else {
+          console.error("Utilisateur Auth introuvable pour:", email);
+        }
+      } catch (confirmCatch) {
+        console.error("Exception confirmation email:", confirmCatch);
+      }
+    } else {
+      console.warn(
+        "SUPABASE_SERVICE_ROLE_KEY absente : email non confirmé automatiquement."
+      );
     }
 
     const safePrenom = escapeHtml(prenom);
@@ -116,7 +172,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, id: data.id }), {
+    return new Response(JSON.stringify({ success: true, id: data.id, emailConfirmed }), {
       status: 200,
       headers: jsonHeaders,
     });
