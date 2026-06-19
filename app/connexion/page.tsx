@@ -54,6 +54,10 @@ export default function ConnexionPage() {
       logAuthError("login", email, msg);
       if (msg.includes("Invalid login")) {
         setError("invalid_login");
+      } else if (msg.toLowerCase().includes("email not confirmed")) {
+        setError(
+          "Votre compte est en attente de validation par l'équipe Lit uP. Vous recevrez un email dès qu'il sera activé."
+        );
       } else {
         setError(msg);
       }
