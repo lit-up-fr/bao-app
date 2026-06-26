@@ -18,6 +18,7 @@ import {
   type Objectif,
 } from "@/lib/supabase";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { logEvent } from "@/lib/analytics";
 import AppHeader from "@/components/AppHeader";
 import Sidebar, { DUREE_TRANCHES, parseDureeLibreToMinutes } from "@/components/Sidebar";
 import FicheCard from "@/components/FicheCard";
@@ -251,6 +252,16 @@ export default function BaoPage() {
     } else { r = [...r].sort((a, b) => a.nom.localeCompare(b.nom)); }
     return r;
   }, [fiches, searchQuery, activeFormats, activeFicheIdsByObjectif, activeFicheIdsByObjectifFilter, activeCles, activMateriels, activeDurees, sortBy]);
+
+  /* ── Journalisation des recherches (débounce) : requête + nb de résultats ── */
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) return;
+    const t = setTimeout(() => {
+      logEvent("search", { metadata: { query: q, results: filtered.length } });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [searchQuery, filtered.length]);
 
   /* ── Toggle helpers ── */
   const toggleFormat = (f: string) => setActiveFormats((p) => p.includes(f) ? p.filter((x) => x !== f) : [...p, f]);

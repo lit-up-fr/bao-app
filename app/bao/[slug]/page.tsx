@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase";
 import { getProfileByUserId } from "@/lib/auth";
 import AppHeader from "@/components/AppHeader";
 import { generateFichePdf } from "@/lib/generateFichePdf";
+import { logEvent } from "@/lib/analytics";
 import RetoursSection from "@/components/RetoursSection";
 
 function parseJSON(val: any): any {
@@ -382,7 +383,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
 
         {/* PDF */}
         <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button onClick={() => generateFichePdf({ ...fiche, cles: cles.map(c => ({ nom: c.nom, emoji: (c as any).emoji })) })} style={{
+          <button onClick={() => { logEvent("pdf_download", { ficheId: fiche.id }); generateFichePdf({ ...fiche, cles: cles.map(c => ({ nom: c.nom, emoji: (c as any).emoji })) }); }} style={{
             padding: "11px 20px", border: "2px solid var(--canard)", background: "var(--canard)", color: "white",
             fontFamily: "inherit", fontSize: "13px", fontWeight: 700, cursor: "pointer", borderRadius: "24px",
             transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: "8px",

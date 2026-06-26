@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import type { Fiche, Cle, Etape, Objectif } from "@/lib/supabase";
 import { formatDuree, slugify } from "@/lib/supabase";
 import { generateFichePdf } from "@/lib/generateFichePdf";
+import { logEvent } from "@/lib/analytics";
 import RetoursSection from "@/components/RetoursSection";
 import Link from "next/link";
 
@@ -499,7 +500,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
         {/* CTA buttons */}
         <div style={{ marginTop: "28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <div role="button" tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); generateFichePdf(fiche, cles.map((c: any) => ({ nom: c.nom, emoji: c.emoji }))); }}
+              onClick={(e) => { e.stopPropagation(); logEvent("pdf_download", { ficheId: fiche.id }); generateFichePdf(fiche, cles.map((c: any) => ({ nom: c.nom, emoji: c.emoji }))); }}
               style={{
                 padding: "11px 20px",
                 border: "2px solid var(--canard)",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getFavoris, getProfileByUserId } from "@/lib/auth";
+import { logSessionStartOnce } from "@/lib/analytics";
 
 export function useCurrentUser() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -15,6 +16,7 @@ export function useCurrentUser() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
+        logSessionStartOnce(); // fire & forget : journalise la visite (1×/session)
         const [favs, profile] = await Promise.all([
           getFavoris(session.user.id),
           getProfileByUserId(session.user.id),
