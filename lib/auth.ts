@@ -26,6 +26,8 @@ export interface Profile {
   created_at?: string;
   updated_at?: string;
   last_seen_at?: string;
+  // Nombre total de connexions (alimenté par le trigger on_auth_user_login).
+  login_count?: number;
 }
 
 export interface SignUpData {
@@ -205,6 +207,38 @@ export async function updateProfileStatus(
   const { error } = await supabase
     .from("profiles")
     .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
+// Champs de profil éditables par un admin (infos « non privilégiées » : ni
+// is_admin, ni admin_role(s), ni status). L'email n'est pas modifiable ici car
+// il sert d'identifiant de connexion (changement à gérer côté Auth).
+export interface ProfileEditableInfo {
+  prenom?: string;
+  nom?: string;
+  telephone?: string | null;
+  structure?: string | null;
+  poste?: string | null;
+  code_postal?: string | null;
+  categorie_pro?: string;
+  categorie_pro_autre?: string | null;
+  region?: string | null;
+  tranche_age?: string | null;
+  public_accompagne?: string | null;
+}
+
+// Met à jour les informations d'un profil. Les droits sont garantis côté serveur
+// par le RLS « Update profiles » (un admin simple ne peut éditer qu'un non-admin,
+// un super-admin peut éditer tout le monde).
+export async function updateProfileInfo(
+  userId: string,
+  info: ProfileEditableInfo
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ ...info, updated_at: new Date().toISOString() })
     .eq("id", userId);
 
   if (error) throw error;

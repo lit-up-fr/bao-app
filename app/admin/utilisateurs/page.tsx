@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllProfiles, updateProfileStatus, updateProfileRole, updateProfileRoles, deleteUserCompletely, Profile } from "@/lib/auth";
+import { getAllProfiles, updateProfileStatus, updateProfileRole, updateProfileRoles, updateProfileInfo, deleteUserCompletely, Profile, ProfileEditableInfo } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { getProfileByUserId } from "@/lib/auth";
 import RolesCheckboxes from "./RolesCheckboxes";
@@ -16,6 +16,73 @@ export default function AdminUtilisateursPage() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  // Édition des infos d'un profil
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<ProfileEditableInfo>({});
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // On quitte le mode édition dès qu'on change de profil sélectionné.
+  useEffect(() => {
+    setEditing(false);
+  }, [selectedProfile?.id]);
+
+  const isSuperAdmin = currentUserRole === "super_admin";
+  // Un admin simple ne peut éditer que les non-admins ; le super-admin édite tout.
+  const canEditSelected =
+    !!selectedProfile && (isSuperAdmin || !selectedProfile.is_admin);
+
+  function startEditing() {
+    if (!selectedProfile) return;
+    setEditForm({
+      prenom: selectedProfile.prenom || "",
+      nom: selectedProfile.nom || "",
+      telephone: selectedProfile.telephone || "",
+      structure: selectedProfile.structure || "",
+      poste: selectedProfile.poste || "",
+      code_postal: selectedProfile.code_postal || "",
+      categorie_pro: selectedProfile.categorie_pro || "",
+      categorie_pro_autre: selectedProfile.categorie_pro_autre || "",
+      region: selectedProfile.region || "",
+      tranche_age: selectedProfile.tranche_age || "",
+      public_accompagne: selectedProfile.public_accompagne || "",
+    });
+    setEditing(true);
+  }
+
+  async function handleSaveInfo() {
+    if (!selectedProfile) return;
+    setSavingEdit(true);
+    try {
+      // Chaînes vides -> null pour les champs optionnels ; on garde une chaîne
+      // pour prénom/nom/catégorie (champs requis à l'inscription).
+      const payload: ProfileEditableInfo = {
+        prenom: (editForm.prenom || "").trim(),
+        nom: (editForm.nom || "").trim(),
+        telephone: (editForm.telephone || "").trim() || null,
+        structure: (editForm.structure || "").trim() || null,
+        poste: (editForm.poste || "").trim() || null,
+        code_postal: (editForm.code_postal || "").trim() || null,
+        categorie_pro: (editForm.categorie_pro || "").trim(),
+        categorie_pro_autre: (editForm.categorie_pro_autre || "").trim() || null,
+        region: (editForm.region || "").trim() || null,
+        tranche_age: (editForm.tranche_age || "").trim() || null,
+        public_accompagne: (editForm.public_accompagne || "").trim() || null,
+      };
+      await updateProfileInfo(selectedProfile.id, payload);
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === selectedProfile.id ? { ...p, ...payload } as Profile : p))
+      );
+      setSelectedProfile((prev) => (prev ? ({ ...prev, ...payload } as Profile) : null));
+      setEditing(false);
+    } catch (e) {
+      console.error("Erreur mise à jour infos:", e);
+      alert(
+        "Erreur lors de l'enregistrement. Un administrateur ne peut pas modifier un autre administrateur (réservé au super-admin)."
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   async function loadProfiles() {
     try {
@@ -310,6 +377,12 @@ export default function AdminUtilisateursPage() {
                   <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: 600, color: "#6b7280" }}>
                     Inscription
                   </th>
+                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: 600, color: "#6b7280" }}>
+                    Dernière connexion
+                  </th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "13px", fontWeight: 600, color: "#6b7280" }}>
+                    Connexions
+                  </th>
                   <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "13px", fontWeight: 600, color: "#6b7280" }}>
                     Actions
                   </th>
@@ -318,7 +391,7 @@ export default function AdminUtilisateursPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: "32px", textAlign: "center", color: "#9ca3af" }}>
+                    <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "#9ca3af" }}>
                       Aucun utilisateur trouvé
                     </td>
                   </tr>
@@ -360,6 +433,18 @@ export default function AdminUtilisateursPage() {
                               year: "numeric",
                             })
                           : "—"}
+                      </td>
+                      <td style={{ padding: "12px 16px", fontSize: "13px", color: "#6b7280" }}>
+                        {p.last_seen_at
+                          ? new Date(p.last_seen_at).toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "Jamais"}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontSize: "14px", fontWeight: 600, color: "#2B3442" }}>
+                        {p.login_count ?? 0}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "right" }}>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
@@ -505,58 +590,121 @@ export default function AdminUtilisateursPage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "#2B3442" }}>
-                  {selectedProfile.prenom} {selectedProfile.nom}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                <div>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#2B3442" }}>
+                    {selectedProfile.prenom} {selectedProfile.nom}
+                  </div>
+                  <StatusBadge status={selectedProfile.status} />
                 </div>
-                <StatusBadge status={selectedProfile.status} />
+                {canEditSelected && !editing && (
+                  <button
+                    onClick={startEditing}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      background: "white",
+                      color: "#2B3442",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    ✎ Modifier
+                  </button>
+                )}
               </div>
 
-              <DetailRow label="Email" value={selectedProfile.email} />
-              <DetailRow label="Téléphone" value={selectedProfile.telephone} />
-              <DetailRow label="Structure" value={selectedProfile.structure} />
-              <DetailRow label="Poste" value={selectedProfile.poste} />
-              <DetailRow label="Catégorie" value={
-                selectedProfile.categorie_pro === "Autre"
-                  ? selectedProfile.categorie_pro_autre
-                  : selectedProfile.categorie_pro
-              } />
-              <DetailRow label="Région" value={selectedProfile.region} />
-              <DetailRow label="Code postal" value={selectedProfile.code_postal} />
-              <DetailRow label="Tranche d'âge" value={selectedProfile.tranche_age} />
-              <DetailRow label="Public accompagné" value={selectedProfile.public_accompagne} />
-              <DetailRow
-                label="Inscription"
-                value={
-                  selectedProfile.created_at
-                    ? new Date(selectedProfile.created_at).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : undefined
-                }
-              />
-              <DetailRow
-                label="Dernière connexion"
-                value={
-                  selectedProfile.last_seen_at
-                    ? new Date(selectedProfile.last_seen_at).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : undefined
-                }
-              />
-              <DetailRow
-                label="Newsletter"
-                value={selectedProfile.newsletter_consent ? "Oui" : "Non"}
-              />
+              {editing ? (
+                <>
+                  <EditRow label="Prénom" value={editForm.prenom || ""} onChange={(v) => setEditForm((f) => ({ ...f, prenom: v }))} />
+                  <EditRow label="Nom" value={editForm.nom || ""} onChange={(v) => setEditForm((f) => ({ ...f, nom: v }))} />
+                  <DetailRow label="Email (non modifiable ici)" value={selectedProfile.email} />
+                  <EditRow label="Téléphone" value={editForm.telephone || ""} onChange={(v) => setEditForm((f) => ({ ...f, telephone: v }))} />
+                  <EditRow label="Structure" value={editForm.structure || ""} onChange={(v) => setEditForm((f) => ({ ...f, structure: v }))} />
+                  <EditRow label="Poste" value={editForm.poste || ""} onChange={(v) => setEditForm((f) => ({ ...f, poste: v }))} />
+                  <EditRow label="Catégorie pro" value={editForm.categorie_pro || ""} onChange={(v) => setEditForm((f) => ({ ...f, categorie_pro: v }))} />
+                  {editForm.categorie_pro === "Autre" && (
+                    <EditRow label="Catégorie (autre)" value={editForm.categorie_pro_autre || ""} onChange={(v) => setEditForm((f) => ({ ...f, categorie_pro_autre: v }))} />
+                  )}
+                  <EditRow label="Région" value={editForm.region || ""} onChange={(v) => setEditForm((f) => ({ ...f, region: v }))} />
+                  <EditRow label="Code postal" value={editForm.code_postal || ""} onChange={(v) => setEditForm((f) => ({ ...f, code_postal: v }))} />
+                  <EditRow label="Tranche d'âge" value={editForm.tranche_age || ""} onChange={(v) => setEditForm((f) => ({ ...f, tranche_age: v }))} />
+                  <EditRow label="Public accompagné" value={editForm.public_accompagne || ""} onChange={(v) => setEditForm((f) => ({ ...f, public_accompagne: v }))} />
+
+                  <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                    <button
+                      onClick={handleSaveInfo}
+                      disabled={savingEdit}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", background: savingEdit ? "#9ca3af" : "#00989D", color: "white", fontSize: "14px", fontWeight: 600, cursor: savingEdit ? "not-allowed" : "pointer", fontFamily: "inherit" }}
+                    >
+                      {savingEdit ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                    <button
+                      onClick={() => setEditing(false)}
+                      disabled={savingEdit}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", background: "white", color: "#6b7280", fontSize: "14px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <DetailRow label="Email" value={selectedProfile.email} />
+                  <DetailRow label="Téléphone" value={selectedProfile.telephone} />
+                  <DetailRow label="Structure" value={selectedProfile.structure} />
+                  <DetailRow label="Poste" value={selectedProfile.poste} />
+                  <DetailRow label="Catégorie" value={
+                    selectedProfile.categorie_pro === "Autre"
+                      ? selectedProfile.categorie_pro_autre
+                      : selectedProfile.categorie_pro
+                  } />
+                  <DetailRow label="Région" value={selectedProfile.region} />
+                  <DetailRow label="Code postal" value={selectedProfile.code_postal} />
+                  <DetailRow label="Tranche d'âge" value={selectedProfile.tranche_age} />
+                  <DetailRow label="Public accompagné" value={selectedProfile.public_accompagne} />
+                  <DetailRow
+                    label="Inscription"
+                    value={
+                      selectedProfile.created_at
+                        ? new Date(selectedProfile.created_at).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : undefined
+                    }
+                  />
+                  <DetailRow
+                    label="Dernière connexion"
+                    value={
+                      selectedProfile.last_seen_at
+                        ? new Date(selectedProfile.last_seen_at).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : undefined
+                    }
+                  />
+                  <DetailRow
+                    label="Nombre de connexions"
+                    value={String(selectedProfile.login_count ?? 0)}
+                  />
+                  <DetailRow
+                    label="Newsletter"
+                    value={selectedProfile.newsletter_consent ? "Oui" : "Non"}
+                  />
+                </>
+              )}
             </div>
 
             {/* Rôles admin (super_admin uniquement) - cumulables via checkboxes */}
@@ -694,6 +842,39 @@ function DetailRow({ label, value }: { label: string; value?: string | null }) {
       <div style={{ fontSize: "14px", color: value ? "#2B3442" : "#d1d5db", marginTop: "2px" }}>
         {value || "Non renseigné"}
       </div>
+    </div>
+  );
+}
+
+function EditRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
+        {label}
+      </div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "8px 10px",
+          border: "1px solid #d1d5db",
+          borderRadius: "8px",
+          fontSize: "14px",
+          outline: "none",
+          fontFamily: "inherit",
+          color: "#2B3442",
+        }}
+      />
     </div>
   );
 }
