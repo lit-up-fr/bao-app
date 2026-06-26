@@ -15,6 +15,7 @@ import {
   Lightbulb,
   Bot,
   TrendingUp,
+  Gauge,
   Map,
   MapPin,
   AlertTriangle,
@@ -56,6 +57,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: "/admin/analyses-ia", label: "Analyses IA", icon: Bot, roles: ["super_admin", "pedagogical_reviewer"] },
   // Analytics (Analyste)
   { href: "/admin/analytics", label: "Analytics", icon: TrendingUp, roles: ["super_admin", "analyst"] },
+  // Tableau de bord d'impact (Analyste) — orienté financeurs / mesure d'impact
+  { href: "/admin/impact", label: "Impact", icon: Gauge, roles: ["super_admin", "analyst"] },
   // Pages dépréciées (ancien modèle)
   { href: "/admin/parcours", label: "Parcours", icon: Map, roles: ["super_admin", "editor"], deprecated: true },
   { href: "/admin/etapes", label: "Étapes", icon: MapPin, roles: ["super_admin", "editor"], deprecated: true },
