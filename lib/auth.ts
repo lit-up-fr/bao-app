@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { pushImpactEvent } from "./impactSync";
 
 // Types
 export interface Profile {
@@ -123,6 +124,21 @@ export async function signUp(data: SignUpData) {
       console.error("signUp upsert profile:", profileError.message);
     }
   }
+
+  // Synchro impact (best-effort) : remonte l'inscription vers Airtable via Make.
+  pushImpactEvent({
+    event: "inscription",
+    email: data.email,
+    prenom: data.prenom,
+    nom: data.nom,
+    structure: data.structure || null,
+    poste: data.poste || null,
+    region: data.region || null,
+    code_postal: data.code_postal || null,
+    categorie_pro: data.categorie_pro,
+    jeunes_par_an_min: data.jeunes_par_an_min ?? null,
+    jeunes_par_an_max: data.jeunes_par_an_max ?? null,
+  });
 
   return authData;
 }
