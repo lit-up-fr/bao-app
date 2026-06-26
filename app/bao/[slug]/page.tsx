@@ -19,6 +19,7 @@ import { getProfileByUserId } from "@/lib/auth";
 import AppHeader from "@/components/AppHeader";
 import { generateFichePdf } from "@/lib/generateFichePdf";
 import { logEvent } from "@/lib/analytics";
+import UsageOutilButton from "@/components/UsageOutilButton";
 import RetoursSection from "@/components/RetoursSection";
 
 function parseJSON(val: any): any {
@@ -391,6 +392,7 @@ export default function FicheDetailPage({ params }: { params: { slug: string } }
           }}>
             ↓ Télécharger la fiche PDF
           </button>
+          <UsageOutilButton ficheNom={fiche.nom} ficheSlug={fiche.slug} userId={userId} />
         </div>
 
         {/* Source */}

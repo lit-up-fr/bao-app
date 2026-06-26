@@ -6,6 +6,7 @@ import type { Fiche, Cle, Etape, Objectif } from "@/lib/supabase";
 import { formatDuree, slugify } from "@/lib/supabase";
 import { generateFichePdf } from "@/lib/generateFichePdf";
 import { logEvent } from "@/lib/analytics";
+import UsageOutilButton from "@/components/UsageOutilButton";
 import RetoursSection from "@/components/RetoursSection";
 import Link from "next/link";
 
@@ -520,6 +521,7 @@ export default function FicheModal({ fiche, cles, etape, onClose, userId, isAdmi
             >
               ↓ Télécharger la fiche PDF
             </div>
+          <UsageOutilButton ficheNom={fiche.nom} ficheSlug={fiche.slug} userId={userId || null} />
         </div>
 
         {/* Source */}
