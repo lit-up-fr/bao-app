@@ -15,6 +15,9 @@ export interface Profile {
   region?: string;
   tranche_age?: string;
   public_accompagne?: string;
+  // Estimation du nombre de jeunes accompagnés par an (fourchette basse / haute)
+  jeunes_par_an_min?: number | null;
+  jeunes_par_an_max?: number | null;
   newsletter_consent: boolean;
   cgu_accepted_at?: string;
   privacy_accepted_at?: string;
@@ -44,6 +47,8 @@ export interface SignUpData {
   region?: string;
   tranche_age?: string;
   public_accompagne?: string;
+  jeunes_par_an_min?: number;
+  jeunes_par_an_max?: number;
   newsletter_consent: boolean;
 }
 
@@ -70,6 +75,8 @@ export async function signUp(data: SignUpData) {
         region: data.region || "",
         tranche_age: data.tranche_age || "",
         public_accompagne: data.public_accompagne || "",
+        jeunes_par_an_min: data.jeunes_par_an_min ?? null,
+        jeunes_par_an_max: data.jeunes_par_an_max ?? null,
         newsletter_consent: data.newsletter_consent,
       },
     },
@@ -99,6 +106,8 @@ export async function signUp(data: SignUpData) {
         region: data.region || null,
         tranche_age: data.tranche_age || null,
         public_accompagne: data.public_accompagne || null,
+        jeunes_par_an_min: data.jeunes_par_an_min ?? null,
+        jeunes_par_an_max: data.jeunes_par_an_max ?? null,
         newsletter_consent: data.newsletter_consent,
         cgu_accepted_at: new Date().toISOString(),
         privacy_accepted_at: new Date().toISOString(),
@@ -227,6 +236,8 @@ export interface ProfileEditableInfo {
   region?: string | null;
   tranche_age?: string | null;
   public_accompagne?: string | null;
+  jeunes_par_an_min?: number | null;
+  jeunes_par_an_max?: number | null;
 }
 
 // Met à jour les informations d'un profil. Les droits sont garantis côté serveur

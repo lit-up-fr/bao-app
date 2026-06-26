@@ -82,6 +82,9 @@ export default function InscriptionPage() {
   });
 
   const [cguAccepted, setCguAccepted] = useState(false);
+  // Estimation du nombre de jeunes accompagnés par an (fourchette)
+  const [jeunesMin, setJeunesMin] = useState("");
+  const [jeunesMax, setJeunesMax] = useState("");
 
   function updateForm(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -106,6 +109,14 @@ export default function InscriptionPage() {
     if (form.categorie_pro === "Autre" && !form.categorie_pro_autre?.trim())
       return "Précisez votre catégorie professionnelle";
     if (!form.structure?.trim()) return "La structure est requise";
+    if (!jeunesMin.trim() || !jeunesMax.trim())
+      return "Indiquez une estimation du nombre de jeunes accompagnés par an";
+    const jMin = parseInt(jeunesMin, 10);
+    const jMax = parseInt(jeunesMax, 10);
+    if (isNaN(jMin) || isNaN(jMax) || jMin < 0 || jMax < 0)
+      return "Le nombre de jeunes doit être un nombre positif";
+    if (jMin > jMax)
+      return "La fourchette basse ne peut pas dépasser la fourchette haute";
     return null;
   }
 
@@ -161,6 +172,8 @@ export default function InscriptionPage() {
         region: form.region || undefined,
         tranche_age: form.tranche_age || undefined,
         public_accompagne: form.public_accompagne || undefined,
+        jeunes_par_an_min: jeunesMin ? parseInt(jeunesMin, 10) : undefined,
+        jeunes_par_an_max: jeunesMax ? parseInt(jeunesMax, 10) : undefined,
         newsletter_consent: form.newsletter_consent,
       });
 
@@ -556,6 +569,43 @@ export default function InscriptionPage() {
                   })}
                 </div>
               </div>
+
+              <div>
+                <label style={labelStyle}>
+                  Nombre de jeunes accompagnés par an (estimation){" "}
+                  <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "14px", color: "#6b7280" }}>entre</span>
+                  <input
+                    type="number"
+                    min={0}
+                    style={{ ...inputStyle, width: "110px" }}
+                    value={jeunesMin}
+                    onChange={(e) => {
+                      setJeunesMin(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="20"
+                  />
+                  <span style={{ fontSize: "14px", color: "#6b7280" }}>et</span>
+                  <input
+                    type="number"
+                    min={0}
+                    style={{ ...inputStyle, width: "110px" }}
+                    value={jeunesMax}
+                    onChange={(e) => {
+                      setJeunesMax(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="50"
+                  />
+                  <span style={{ fontSize: "14px", color: "#6b7280" }}>jeunes / an</span>
+                </div>
+                <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "6px" }}>
+                  Une estimation suffit. Cela nous aide à mesurer la portée de la Boîte à Outils auprès des jeunes.
+                </p>
+              </div>
             </div>
           )}
 
@@ -611,6 +661,14 @@ export default function InscriptionPage() {
                       <span style={{ color: "#6b7280" }}>Région :</span>
                       <span style={{ color: "#2B3442", fontWeight: 500 }}>
                         {form.region}
+                      </span>
+                    </>
+                  )}
+                  {(jeunesMin || jeunesMax) && (
+                    <>
+                      <span style={{ color: "#6b7280" }}>Jeunes / an :</span>
+                      <span style={{ color: "#2B3442", fontWeight: 500 }}>
+                        entre {jeunesMin || "?"} et {jeunesMax || "?"}
                       </span>
                     </>
                   )}

@@ -45,12 +45,22 @@ export default function AdminUtilisateursPage() {
       region: selectedProfile.region || "",
       tranche_age: selectedProfile.tranche_age || "",
       public_accompagne: selectedProfile.public_accompagne || "",
+      jeunes_par_an_min: selectedProfile.jeunes_par_an_min ?? null,
+      jeunes_par_an_max: selectedProfile.jeunes_par_an_max ?? null,
     });
     setEditing(true);
   }
 
   async function handleSaveInfo() {
     if (!selectedProfile) return;
+    if (
+      editForm.jeunes_par_an_min != null &&
+      editForm.jeunes_par_an_max != null &&
+      editForm.jeunes_par_an_min > editForm.jeunes_par_an_max
+    ) {
+      alert("Nombre de jeunes : la fourchette basse ne peut pas dépasser la fourchette haute.");
+      return;
+    }
     setSavingEdit(true);
     try {
       // Chaînes vides -> null pour les champs optionnels ; on garde une chaîne
@@ -67,6 +77,8 @@ export default function AdminUtilisateursPage() {
         region: (editForm.region || "").trim() || null,
         tranche_age: (editForm.tranche_age || "").trim() || null,
         public_accompagne: (editForm.public_accompagne || "").trim() || null,
+        jeunes_par_an_min: editForm.jeunes_par_an_min ?? null,
+        jeunes_par_an_max: editForm.jeunes_par_an_max ?? null,
       };
       await updateProfileInfo(selectedProfile.id, payload);
       setProfiles((prev) =>
@@ -635,6 +647,31 @@ export default function AdminUtilisateursPage() {
                   <EditRow label="Tranche d'âge" value={editForm.tranche_age || ""} onChange={(v) => setEditForm((f) => ({ ...f, tranche_age: v }))} />
                   <EditRow label="Public accompagné" value={editForm.public_accompagne || ""} onChange={(v) => setEditForm((f) => ({ ...f, public_accompagne: v }))} />
 
+                  <div>
+                    <div style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
+                      Jeunes accompagnés / an (estimation)
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "13px", color: "#6b7280" }}>entre</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={editForm.jeunes_par_an_min ?? ""}
+                        onChange={(e) => setEditForm((f) => ({ ...f, jeunes_par_an_min: e.target.value === "" ? null : parseInt(e.target.value, 10) }))}
+                        style={{ width: "80px", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none", fontFamily: "inherit", color: "#2B3442" }}
+                      />
+                      <span style={{ fontSize: "13px", color: "#6b7280" }}>et</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={editForm.jeunes_par_an_max ?? ""}
+                        onChange={(e) => setEditForm((f) => ({ ...f, jeunes_par_an_max: e.target.value === "" ? null : parseInt(e.target.value, 10) }))}
+                        style={{ width: "80px", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none", fontFamily: "inherit", color: "#2B3442" }}
+                      />
+                      <span style={{ fontSize: "13px", color: "#6b7280" }}>/ an</span>
+                    </div>
+                  </div>
+
                   <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                     <button
                       onClick={handleSaveInfo}
@@ -667,6 +704,14 @@ export default function AdminUtilisateursPage() {
                   <DetailRow label="Code postal" value={selectedProfile.code_postal} />
                   <DetailRow label="Tranche d'âge" value={selectedProfile.tranche_age} />
                   <DetailRow label="Public accompagné" value={selectedProfile.public_accompagne} />
+                  <DetailRow
+                    label="Jeunes accompagnés / an"
+                    value={
+                      selectedProfile.jeunes_par_an_min != null || selectedProfile.jeunes_par_an_max != null
+                        ? `entre ${selectedProfile.jeunes_par_an_min ?? "?"} et ${selectedProfile.jeunes_par_an_max ?? "?"} / an`
+                        : undefined
+                    }
+                  />
                   <DetailRow
                     label="Inscription"
                     value={
