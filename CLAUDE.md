@@ -569,7 +569,14 @@ sécurité). Pas pour chaque commit, Git s'en charge déjà.
 ## 12. Travailler avec Claude sur ce projet
 
 Ce fichier est lu automatiquement par Claude Code au démarrage d'une session
-dans ce repo. Quelques attentes de travail explicites :
+dans ce repo.
+
+> **Règle de fin de conversation (elle s'applique à toute personne et à toute
+> session, sans qu'on ait à la redemander).** Avant de clore un échange de
+> travail, Claude fait le tri de ce qui a été appris et met à jour ce fichier.
+> Le mode opératoire est en §13.
+
+Quelques attentes de travail explicites :
 
 - Annoncer une **estimation de temps** en début de réponse.
 - Aller droit au but, découper en étapes numérotées.
@@ -587,8 +594,61 @@ dans ce repo. Quelques attentes de travail explicites :
 
 ## 13. Faire vivre ce document
 
-Ce fichier n'a de valeur que s'il reste vrai. Mets-le à jour dans la même PR
-que ton changement quand tu :
+Ce fichier n'a de valeur que s'il reste vrai.
+
+### La règle
+
+**À la fin de chaque conversation de travail sur ce projet, quelle que soit la
+personne et quel que soit l'outil (Claude Code, Claude Desktop, claude.ai),
+Claude alimente ce fichier avec ce que la conversation a appris.**
+
+C'est un réflexe attendu, pas une faveur à demander. Claude le fait de
+lui-même, sans attendre qu'on le lui rappelle, et sans demander la permission
+d'en parler : il propose le contenu, la personne valide.
+
+Ce qui est à retenir :
+
+- une décision tranchée, et le pourquoi en une ligne
+- une étape à venir, avec sa priorité si elle a été dite
+- une question restée ouverte, et qui la tranchera
+- un piège rencontré, avec le correctif exact
+- une convention nouvelle ou modifiée
+- un jalon livré et mergé
+
+Ce qui n'est **pas** à retenir : le détail du déroulé, les essais
+infructueux sans enseignement, les reformulations de ce qui est déjà écrit
+ici, et tout ce qui n'a pas été réellement dit dans la conversation. Dans le
+doute, on n'écrit pas : un document gonflé d'approximations est pire qu'un
+document court.
+
+### Le mode opératoire
+
+**En Claude Code, avec le repo sous la main** : Claude édite directement la
+bonne section, montre le diff, et propose le commit. Pas de fichier annexe,
+pas de note à reporter à la main.
+
+**Hors Claude Code** (Claude Desktop, claude.ai, où le repo n'est pas
+accessible en écriture) : Claude produit un bloc markdown collable et dit dans
+quelle section le ranger. La personne le reporte dans le fichier.
+
+**Si rien n'est à retenir**, Claude le dit en une phrase et on passe à autre
+chose. Une conversation sur trois n'apprend rien de durable, c'est normal.
+
+### Où ranger quoi
+
+| Ce qui sort de la conversation | Section |
+|---|---|
+| Décisions, étapes à venir, questions à trancher | §10 |
+| Piège rencontré et son correctif | §8 |
+| Convention de rédaction ou de code | §5 ou §6 |
+| Jalon livré et mergé sur `main` | §11 |
+| Nouvelle table, route API ou rôle admin | §4 |
+| Dette technique créée ou résorbée | §10 |
+
+### Cas particulier : la mise à jour dans une PR
+
+Quand ta modification touche le code, mets ce fichier à jour **dans la même
+PR** que le changement, notamment quand tu :
 
 - ajoutes une table, une route API ou un rôle admin (§4)
 - changes une convention ou un pattern (§5, §6)
@@ -599,12 +659,10 @@ que ton changement quand tu :
 En cas de contradiction entre ce document et le code, **le code fait foi** :
 corrige alors le document dans la foulée.
 
-### Prompt de récap à coller en fin de conversation
+### Les prompts de relance
 
-Beaucoup de décisions se prennent en discussion avec Claude et n'atterrissent
-jamais dans le repo. Pour éviter ça, colle ce prompt à la fin de chaque session
-de travail (Claude Code, Claude Desktop ou claude.ai), puis reporte le bloc
-obtenu dans la bonne section de ce fichier.
+À utiliser quand la règle ci-dessus n'a pas été appliquée d'elle-même, ou
+depuis un outil qui ne lit pas ce fichier.
 
 ```
 Récap pour le CLAUDE.md de lit-up-fr/bao-app.
