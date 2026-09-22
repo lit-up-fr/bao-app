@@ -157,7 +157,7 @@ docs/                       # notes de conception et feuilles de route
 
 `profiles`, `fiches`, `objectifs`, `cles`, `etapes`, `parcours`,
 `diagnostic_analyses`, `analyses_cache`, `propositions`, `retours`,
-`favoris`, `consultations`, `analytics_events`.
+`favoris`, `consultations`, `analytics_events`, `auth_error_logs`.
 
 ### Rôles admin
 
@@ -215,6 +215,20 @@ d'engagement (`--key-*`).
 
 Typo : **Source Sans 3** (corps et titres), **Caveat** (accroches manuscrites).
 
+**Icônes d'application** (famille visuelle sur l'écran d'accueil) : fond teal
+`#00989D` plein cadre, pictogramme blanc, accent jaune `#FCC33D`. Le picto
+respecte la zone de sécurité, les mêmes fichiers servant en `any` et en
+`maskable`.
+
+**Pages publiques événementielles** (celles qu'on atteint par un QR code) :
+autonomes, sans lien vers le reste de l'app, `noindex, nofollow`, mobile-first,
+`prefers-reduced-motion` respecté. Univers Archipel : fond crème `#FBF6EA`,
+teal `#00989D`, jaune `#FCC33E`, texte `#2B3442`, touche violet `#6B2468`.
+Référence : `app/roulette-questions/`. Les QR codes imprimés pointent sur une
+URL de redirection déclarée dans `next.config.js` (par exemple
+`/roulette-defis`), jamais sur la page finale : on peut ainsi changer la cible
+sans réimprimer.
+
 **État réel du style dans le repo** : le projet utilise très majoritairement
 des **styles inline avec hex en dur** plutôt que les classes Tailwind
 personnalisées (les tokens `canard`, `jaune`, `litup-*` définis dans les
@@ -257,18 +271,58 @@ Trois règles pour toute route sous `app/api/` :
 Les routes best-effort (analytics, impact) ne doivent jamais bloquer l'UX :
 elles avalent leurs erreurs et renvoient un statut non bloquant.
 
+### Analyse photo et prompts Claude
+
+- Les clés couleur internes sont **toujours** `rose`, `jaune`, `bleu`, `vert`
+  (positions 1 à 4, poids 0, 33, 66, 100). Les libellés affichés et les noms
+  envoyés à Claude peuvent différer (le pro déclare ses propres couleurs), mais
+  on remappe toujours vers ces quatre clés avant de calculer les scores.
+- Le contexte physique décrit à Claude dépend du matériel déclaré (jetons posés
+  sur les cartes, gommettes sur un post-it de n'importe quelle couleur, feutres
+  sur une feuille à côté). Ne réintroduis pas de matériel en dur dans le prompt
+  (`contextePhysique`, `app/bao/analyse/page.tsx`).
+- Quand le pro utilise des couleurs personnalisées, les libellés `c1` à `c4`
+  sont construits depuis `customColorLabels` et injectés dans le prompt **et**
+  dans le gabarit JSON attendu.
+- Après analyse, on ne va **pas** directement aux résultats : on bascule en
+  saisie manuelle pré-remplie (bandeau « Résultats détectés par l'IA », état
+  `aiAnalyzed`). Le comptage automatique de jetons n'est pas assez fiable, la
+  vérification humaine est obligatoire.
+- `APPARTENANCE`, sur certaines versions des cartes, vaut `CONFIANCE`.
+
 ### Supabase et migrations
 
-Toute modification de schéma passe par un fichier dans
-`supabase/migrations/`, horodaté en UTC, jamais par un clic dans le dashboard.
+Toute modification de schéma s'écrit dans un fichier de
+`supabase/migrations/`, horodaté en UTC. C'est la source de vérité du schéma,
+même quand l'application se fait ailleurs.
 
 ```bash
 supabase migration new nom_explicite      # ou fichier créé à la main :
 date -u +"%Y%m%d%H%M%S"                   # -> {timestamp}_nom.sql
-supabase db push                          # applique sur le projet lié
+```
+
+**Application : par le SQL Editor du dashboard, pas par `supabase db push`.**
+L'historique des migrations est incomplet (`is_admin()`, `diagnostic_analyses`,
+`analyses_cache` et plusieurs policies ont été créés directement dans le
+dashboard). Un `db push` rejouerait d'anciennes migrations et échouerait, par
+exemple sur un `CREATE POLICY` sans `DROP ... IF EXISTS`
+(`supabase/migrations/20260527195812_security_warnings_fix.sql`). C'est une
+dette connue (§10) : tant qu'elle n'est pas résorbée, on colle le SQL dans
+l'éditeur et on garde le fichier au repo.
+
+**Écris toujours des migrations idempotentes** : `CREATE OR REPLACE`,
+`DROP ... IF EXISTS` avant chaque `CREATE POLICY`, `ALTER TABLE IF EXISTS`,
+`CREATE TABLE IF NOT EXISTS`. Elles doivent pouvoir être rejouées sans casser.
+
+Après application, lancer les advisors et corriger ce qui remonte :
+
+```bash
 supabase db advisors --type security --linked
 supabase db advisors --type performance --linked
 ```
+
+Les **edge functions** se déploient à part, hors Vercel :
+`supabase functions deploy <nom>`.
 
 **Checklist obligatoire pour toute nouvelle table :**
 
@@ -292,7 +346,7 @@ Conventions observées dans les migrations existantes (à reprendre) :
   gain de perf mesuré (l'expression est évaluée une fois, pas par ligne)
 - helpers SQL en `SECURITY DEFINER` avec `SET search_path` explicite, pour
   éviter la récursion infinie des policies sur `profiles`
-- après un `db push`, on relance les advisors et on corrige ce qui remonte
+- après application, on relance les advisors et on corrige ce qui remonte
 
 `supabase/migrations/` est la source de vérité du schéma. Si tu fais un
 correctif à chaud en prod, écris quand même la migration correspondante.
@@ -317,6 +371,10 @@ correctif à chaud en prod, écris quand même la migration correspondante.
   pour « corriger » l'auteur d'un commit).
 - Avant de pousser : `npm run build` en local. C'est la règle qui évite le plus
   d'allers-retours (voir §8).
+- **Délégation validée** : Claude peut créer la PR et la merger lui-même dans
+  `main` quand Laetitia le lui demande (c'est ce qui a été fait pour les PR #5
+  et #6). Ça ne change pas la règle : on passe par une PR, jamais par un push
+  direct sur `main`.
 
 ---
 
@@ -360,6 +418,12 @@ tokens `litup-*` n'existent pas au runtime. **Si tu modifies une config,
 modifie le `.js`**, et vérifie que ton changement est bien pris en compte.
 Le nettoyage de ces doublons est un chantier ouvert (§10).
 
+Piège voisin : une page qui appelle `redirect()` et qui est prérendue en
+statique renvoie un 307 **sans header `Location`**, donc la redirection ne
+fonctionne qu'avec JavaScript activé. Déclare-la dans `redirects()` de
+`next.config.js`, comme c'est fait pour `/roulette-defis` vers
+`/roulette-questions`.
+
 ### Vercel « Deployment was blocked »
 
 Symptôme : le commit poussé remonte en échec GitHub, sans aucune erreur de
@@ -376,12 +440,31 @@ relancer un build avec le bon auteur. On n'amende pas l'historique.
   (`raw_user_meta_data`) et le trigger `on_auth_user_created` fait le reste.
   Un `INSERT` direct est bloqué par le RLS quand la confirmation d'email est
   active (il n'y a pas encore de session).
-- **L'approbation admin confirme aussi l'email Auth.** Sans ça, l'utilisateur
-  validé ne peut pas se connecter (correctif de juin 2026, ne pas régresser).
+- **Le gate d'accès, c'est la validation admin, et elle seule** :
+  `profiles.status = 'active'`. La **confirmation d'email Supabase Auth est
+  désactivée** (Authentication puis Sign In / Providers, onglet Supabase Auth,
+  section User Signups, et non dans la fenêtre du provider Email). Elle faisait
+  doublon avec la validation admin et bloquait des comptes pourtant validés.
+  **Ne la réactive pas** sans avoir d'abord déployé l'edge function
+  `send-welcome-email`, qui confirme l'email au moment de l'approbation et qui
+  n'a jamais été déployée à ce jour.
+  Pour rattraper d'anciens comptes `active` restés non confirmés :
+  `UPDATE auth.users SET email_confirmed_at = now()` filtré sur
+  `profiles.status = 'active'` et `email_confirmed_at IS NULL`, voir
+  `supabase/migrations/20260619120000_confirm_email_for_active_users.sql`.
 - **Escalade de privilèges** : un utilisateur ne doit jamais pouvoir modifier
-  son propre `admin_roles` ni son `status`. C'est verrouillé par RLS, et les
-  routes API revérifient côté serveur. Une vérification uniquement dans l'UI
-  ne protège rien (un appel direct la contourne).
+  son propre `admin_roles` ni son `status`. La policy RLS « Update profiles »
+  autorise la modification de sa propre ligne sans restriction de colonne : le
+  verrou est donc le trigger `trg_prevent_profile_priv_esc` (fonction
+  `prevent_profile_privilege_escalation`), qui bloque `is_admin`, `admin_role`,
+  `admin_roles` et `status` pour les non-admins. Les routes API revérifient
+  côté serveur. Une vérification uniquement dans l'UI ne protège rien.
+- **Les rôles admin ne sont pas encore appliqués en base** : le RLS ne teste
+  que `is_admin()`, le détail des rôles ne vit que côté client
+  (`app/admin/layout.tsx`). Un admin « restreint » a donc, en base, les droits
+  d'un admin complet. À corriger avant de déléguer un rôle restreint (§10).
+- Il n'y a **pas de `middleware.ts`** : la protection est par route, pas
+  globale (§10).
 - Les emails d'authentification passent par le **Send Email Hook** Supabase
   vers Resend (`supabase/auth-hooks/send_auth_email.sql`).
 
@@ -405,6 +488,9 @@ relancer un build avec le bon auteur. On n'amende pas l'historique.
   long, `whitespace-normal` sur les badges.
 - Le `viewport` est déclaré dans `app/layout.tsx` (export `viewport`). Ne le
   supprime pas, sinon la page s'affiche dézoomée sur mobile.
+- Safari iOS met en cache l'`apple-touch-icon` : après déploiement, recharger
+  la page puis refaire « Sur l'écran d'accueil ». Si l'aperçu reste gris,
+  fermer complètement Safari et recommencer.
 - Teste en mobile (DevTools, device toolbar) avant de pousser une modif d'UI.
 
 ### Intégrations externes
@@ -418,9 +504,55 @@ relancer un build avec le bon auteur. On n'amende pas l'historique.
   est un no-op assumé (on peut déployer sans rien casser).
 - **Analyses IA** : quota de 50 analyses par utilisateur et par mois, plus un
   cache de déduplication SHA-256 (`analyses_cache`). La route `/api/analyze`
-  a `maxDuration = 60` car la lecture du corpus Drive est lente. Si tu changes
-  le prompt, vérifie que l'extraction JSON supporte du texte d'introduction
-  avant le JSON (piège déjà rencontré).
+  a `maxDuration = 60` car la lecture du corpus Drive est lente. Elle sert à la
+  fois `/bao/analyse` (baromètre jetons, scores 0 à 100) et
+  `/bao/diagnostic-pro` (zones par clé) : un changement de prompt impacte les
+  deux.
+
+### Analyse photo du baromètre
+
+- **Claude renvoie parfois du texte avant le JSON** : `JSON.parse(brut)` lève
+  `SyntaxError: Unexpected token 'I', "I'll caref"...`. Correctif : extraire le
+  bloc avec `text.match(/\{[\s\S]*\}/)` (`handlePhotoAnalyze`,
+  `app/bao/analyse/page.tsx`).
+- **Vérifier `response.ok` avant de parser** : sur une erreur 500 l'API renvoie
+  `{error: "..."}`, `data.content` est alors `undefined` et le message affiché
+  masque le vrai message serveur. Correctif :
+  `if (!response.ok) throw new Error(data.error || ...)` juste après
+  `response.json()`.
+- **Couleurs en dur dans le prompt** : le prompt annonçait toujours « rose,
+  jaune, bleu, vert » même quand le pro avait déclaré « marron » et « rouge ».
+  Claude voyait les bonnes couleurs sur la photo mais ne savait pas les mapper.
+  Correctif : construire `c1` à `c4` depuis `customColorLabels`.
+
+### Supabase : CLI et migrations
+
+- **`supabase db push` n'est pas utilisable** tant que l'historique des
+  migrations n'est pas réaligné (§6). Appliquer par le SQL Editor.
+- **`supabase functions deploy` renvoie 403** « account does not have the
+  necessary privileges » : il manque un rôle Owner ou Administrator sur
+  l'organisation Supabase. Ce n'est ni Docker ni le code.
+- Dans un trigger sur `profiles`, comparer les colonnes via
+  `to_jsonb(NEW)->>'col'` plutôt que `NEW.col` : si une colonne est absente
+  (`admin_roles` par exemple), `NEW.col` casse **tous** les UPDATE.
+
+### Git et environnement local
+
+- Un prompt qui affiche `|MERGING` signale un `git merge` interrompu en local
+  (souvent des conflits), invisible depuis GitHub. Vérifier `git status` puis
+  `git merge --abort` pour revenir propre.
+- « Toujours rien en prod » alors que le code est poussé : la branche n'est
+  probablement pas mergée dans `main`, et Vercel ne déploie `bao.lit-up.fr` que
+  depuis `main`. Vérifier le merge avant de chercher un bug.
+- Après un rebuild, tuer l'ancien `next start` encore actif, sinon on teste
+  l'ancien build et on conclut à tort que le correctif ne marche pas.
+- Copier du code depuis la vue **rendue** de GitHub insère des artefacts
+  markdown (un lien devient `[www.lit-up.fr](https://www.lit-up.fr)` en plein
+  HTML). Copier depuis la vue **Raw**.
+- Le PAT GitHub n'est stocké nulle part dans le repo (trousseau macOS). Pour le
+  renouveler : « Regenerate token » (même nom, mêmes droits), puis
+  `git credential-osxkeychain erase` et coller la nouvelle valeur au prochain
+  `git push`.
 
 ---
 
@@ -506,8 +638,41 @@ table Airtable et son mapping Make.
 
 - Finaliser le domaine personnalisé `bao.lit-up.fr`.
 
+#### Sécurité, à traiter avant d'ouvrir des accès
+
+- **Porter les rôles admin dans le RLS.** Le RLS ne teste aujourd'hui que
+  `is_admin()` : un rôle restreint ne l'est pas en base. À faire **avant** de
+  déléguer un rôle admin restreint à quelqu'un.
+- **Réaligner l'historique des migrations** avec ce qui existe réellement en
+  base, pour pouvoir revenir à `supabase db push` (§6 et §8).
+- **Ajouter un `middleware.ts`** pour protéger les routes côté serveur.
+  Défense en profondeur, pas urgent.
+
+#### Petits chantiers identifiés
+
+- Vérifier le parcours d'inscription de bout en bout avec un compte de test :
+  approuver depuis `/admin/utilisateurs`, puis se connecter (doit passer sans
+  lien de confirmation).
+- Brancher la carte « Auto-diagnostic du pro » sur `/bao/diagnostic-pro` :
+  elle affiche aujourd'hui une `alert()` « en cours de développement »
+  (`handleAutoDiagnostic`, `app/bao/diagnostiquer/page.tsx`). Décider au
+  passage si on garde le badge « en cours de développement ».
+- Fusionner `next.config.js` et `next.config.mjs` (§8), en vérifiant si
+  `next/image` est utilisé avec des URL Supabase.
+- Supprimer la branche `claude/charming-noether-dbppod`, entièrement intégrée
+  dans `main` : `git branch -D` puis `git push origin --delete`.
+- Afficher des conseils de prise de vue dans la zone de dépôt photo (de dessus,
+  jetons écartés, bonne luminosité). Priorité basse.
+- Obtenir un rôle Owner ou Administrator sur le projet Supabase pour pouvoir
+  déployer les edge functions. Priorité basse.
+
 #### Plus tard, ou à trancher
 
+- **Réactiver ou non la confirmation d'email Auth**, et donc déployer
+  `send-welcome-email` (§8). Décideur : l'Owner du projet Supabase.
+- **Migrer le PAT GitHub classic vers un token fine-grained** limité au seul
+  repo `lit-up-fr/bao-app`, plus sûr que le scope `repo` complet.
+  Décideur : Laetitia.
 - Héberger dans la BAO les **questionnaires jeunes** (autodétermination).
 - Sort des sections **Parcours** et **Étapes** de l'admin : elles sont
   marquées `deprecated: true` dans `NAV_ITEMS` (`app/admin/layout.tsx`) et
@@ -516,9 +681,9 @@ table Airtable et son mapping Make.
   3 (authentification) et 4 (dashboard admin) sont livrées mais encore
   affichées comme non faites.
 
-> Cette liste ne couvre que ce qui est écrit quelque part dans le repo. Si un
-> sujet a été décidé en conversation sans laisser de trace ici, ajoute-le :
-> c'est exactement le rôle de cette section.
+> Cette liste vient du repo et des conversations de travail déjà dépouillées.
+> Si un sujet est décidé ailleurs, reporte-le ici : c'est le rôle de cette
+> section, et la §13 dit comment.
 
 ### Dette technique identifiée
 
@@ -531,6 +696,10 @@ table Airtable et son mapping Make.
 | Aucun test automatisé | régressions détectées en prod | élevée |
 | Pas de hook pre-commit `npm run build` | builds cassés poussés | faible |
 | `is_admin` et `admin_role` (singulier) encore lus en fallback | double source de vérité | moyenne |
+| Historique de migrations incomplet (objets créés dans le dashboard) | `supabase db push` inutilisable | élevée |
+| Rôles admin non appliqués dans le RLS | un rôle restreint ne l'est pas en base | moyenne |
+| `/bao/diagnostic-pro` sans lien entrant | page livrée mais inatteignable | faible |
+| Edge function `send-welcome-email` jamais déployée | code mort tant que la confirmation d'email est désactivée | faible |
 
 Avant de t'attaquer à une ligne de ce tableau, annonce-le : plusieurs de ces
 chantiers touchent tous les fichiers et génèrent des conflits massifs.
@@ -551,13 +720,13 @@ git log --pretty=format:'%ad | %an | %s' --date=short
 | 18 mai 2026 | Laetitia | Questionnaire diagnostic pro, validation IA côté admin, rôles admin multiples (`admin_roles[]`) |
 | 25 mai 2026 | Laetitia | Migration des emojis vers les icônes Lucide, refonte visuelle de la sidebar admin |
 | 27 mai 2026 | Laetitia | 4 migrations Supabase : correctifs sécurité et performance RLS (initplan, index, vues) |
-| 4 juin 2026 | Claude | Analyse photo du baromètre : prompts Claude, comptage des gommettes, extraction JSON robuste, vérification du quota |
+| 4 juin 2026 | Claude | Analyse photo du baromètre : prompt adapté au matériel déclaré, vraies couleurs transmises à Claude, extraction JSON robuste, bascule en saisie manuelle pré-remplie, vérification du quota |
 | 7 juin 2026 | Laetitia et Claude | Création du profil par trigger serveur (correctif inscription), alertes admin sur erreurs d'auth, suppression d'utilisateur, correctifs mobile |
-| 10-11 juin 2026 | Claude | Durcissement sécurité : authentification serveur des routes API, anti-escalade de privilèges, masquage des détails d'erreur |
-| 19 juin 2026 | Claude | Confirmation de l'email Auth à l'approbation admin (déblocage des connexions) |
+| 10-11 juin 2026 | Claude | Durcissement sécurité (commits `a8e5988` et `1184f85`) : authentification serveur des routes API, trigger anti-escalade de privilèges, RLS sur `diagnostic_analyses` et `analyses_cache`, edge function `send-welcome-email` durcie, masquage des détails d'erreur |
+| 19 juin 2026 | Claude | Déblocage des connexions : confirmation d'email Auth désactivée dans Supabase, et migration de rattrapage pour les comptes déjà validés |
 | 25-26 juin 2026 | Claude | Fondation analytics (`analytics_events`), tableau de bord d'impact, suivi des connexions, collecte « jeunes accompagnés par an », synchronisation Airtable via Make (bricks 1 et 2) |
-| 19 août 2026 | Laetitia | PWA : manifest, icônes, métadonnées d'installation |
-| 11 septembre 2026 | Laetitia | Page publique « La roulette des défis » (`/roulette-questions`) |
+| 19 août 2026 | Laetitia | PWA (PR #5) : manifest `app/manifest.ts`, icônes, métadonnées d'installation. Sans service worker ni notifications push, décision assumée |
+| 11 septembre 2026 | Laetitia | Page publique « La roulette des défis » (PR #6, `/roulette-questions`), avec la redirection `/roulette-defis` pour les QR codes |
 | 22 septembre 2026 | Claude | Ce document de collaboration, avec les conventions, les pièges et les étapes à venir |
 
 **Convention** : on ajoute une ligne ici quand un jalon est mergé sur `main`
