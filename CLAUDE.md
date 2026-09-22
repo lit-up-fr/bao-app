@@ -458,12 +458,67 @@ relancer un build avec le bon auteur. On n'amende pas l'historique.
 - PWA (manifest, icônes, installation)
 - Page publique « La roulette des défis »
 
-### En cours et à venir
+### Étapes à venir
 
-- **Brique 3 de la mesure d'impact** : mini-enquêtes in-app (baseline et
-  relance), stockage `impact_surveys` côté Supabase et Airtable côté
-  reporting. Cadrage détaillé dans `docs/mesure-impact-roadmap.md`.
-- Domaine personnalisé `bao.lit-up.fr` à finaliser.
+Les sujets ci-dessous ont été cadrés ensemble et sont tracés dans le repo
+(principalement `docs/mesure-impact-roadmap.md`). Ils sont classés par ordre
+de priorité, pas par date.
+
+#### Priorité 1 : brique 3 de la mesure d'impact (mini-enquêtes)
+
+C'est le chantier en cours. Objectif : répondre aux indicateurs #4, #5 et #6
+du cadre de la Fondation, donc objectiver l'effet de la BAO sur la pratique
+des pros, pas seulement son usage.
+
+Décisions déjà prises (ne pas les rouvrir sans raison) :
+
+- Enquêtes **in-app** plutôt que par email : meilleur taux de réponse, et la
+  BAO sait qui a déjà répondu.
+- **Encart non bloquant et fermable** dans `/mon-espace`. Baseline une fois à
+  l'arrivée, relance après 3 à 4 semaines **et** au moins 3 consultations.
+- Trois blocs de questions :
+  - #4 Outillage (baseline puis après, échelles 1 à 5) : niveau d'outillage
+    pour remobiliser les jeunes les plus en difficulté, capacité à limiter la
+    démobilisation et le décrochage.
+  - #5 Pratique (après) : la pratique a-t-elle évolué grâce à la BAO, des
+    jeunes ont-ils été remobilisés qu'on n'aurait pas su accompagner avant.
+  - #6 Diffusion (après) : les outils ont-ils été partagés à d'autres pros,
+    et à combien.
+- **Stockage double** : table Supabase `impact_surveys` (savoir qui a répondu,
+  pour ne pas re-solliciter) et table Airtable « Enquêtes BAO » alimentée par
+  le même webhook Make, via les events `enquete_baseline` et `enquete_relance`.
+
+Reste à produire : la migration `impact_surveys`, le composant d'encart, la
+table Airtable et son mapping Make.
+
+#### Priorité 2 : finir le tuyau d'impact
+
+- Supprimer les lignes de test `test-make@lit-up.fr` dans la table Airtable
+  « Usages BAO ».
+- Rétention et cohortes dans `/admin/impact`, une fois assez d'événements
+  `session_start` accumulés.
+- Afficher les résultats d'enquêtes dans le tableau de bord d'impact.
+- Trancher sur la table `analyses` : aujourd'hui chaque utilisateur ne lit que
+  ses propres lignes. Si le dashboard doit les agréger, il faut ajouter une
+  policy de lecture admin (les autres tables l'ont déjà).
+
+#### Priorité 3 : mise en ligne
+
+- Finaliser le domaine personnalisé `bao.lit-up.fr`.
+
+#### Plus tard, ou à trancher
+
+- Héberger dans la BAO les **questionnaires jeunes** (autodétermination).
+- Sort des sections **Parcours** et **Étapes** de l'admin : elles sont
+  marquées `deprecated: true` dans `NAV_ITEMS` (`app/admin/layout.tsx`) et
+  affichées à part. À garder, masquer ou supprimer, la décision n'est pas prise.
+- Mettre à jour les cases à cocher du `README.md` : les phases 2 (contenu),
+  3 (authentification) et 4 (dashboard admin) sont livrées mais encore
+  affichées comme non faites.
+
+> Cette liste ne couvre que ce qui est écrit quelque part dans le repo. Si un
+> sujet a été décidé en conversation sans laisser de trace ici, ajoute-le :
+> c'est exactement le rôle de cette section.
 
 ### Dette technique identifiée
 
@@ -503,7 +558,7 @@ git log --pretty=format:'%ad | %an | %s' --date=short
 | 25-26 juin 2026 | Claude | Fondation analytics (`analytics_events`), tableau de bord d'impact, suivi des connexions, collecte « jeunes accompagnés par an », synchronisation Airtable via Make (bricks 1 et 2) |
 | 19 août 2026 | Laetitia | PWA : manifest, icônes, métadonnées d'installation |
 | 11 septembre 2026 | Laetitia | Page publique « La roulette des défis » (`/roulette-questions`) |
-| 22 septembre 2026 | Claude | Ce document de collaboration |
+| 22 septembre 2026 | Claude | Ce document de collaboration, avec les conventions, les pièges et les étapes à venir |
 
 **Convention** : on ajoute une ligne ici quand un jalon est mergé sur `main`
 (une fonctionnalité visible, une migration de schéma, un correctif de
