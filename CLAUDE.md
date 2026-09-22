@@ -598,3 +598,43 @@ que ton changement quand tu :
 
 En cas de contradiction entre ce document et le code, **le code fait foi** :
 corrige alors le document dans la foulée.
+
+### Prompt de récap à coller en fin de conversation
+
+Beaucoup de décisions se prennent en discussion avec Claude et n'atterrissent
+jamais dans le repo. Pour éviter ça, colle ce prompt à la fin de chaque session
+de travail (Claude Code, Claude Desktop ou claude.ai), puis reporte le bloc
+obtenu dans la bonne section de ce fichier.
+
+```
+Récap pour le CLAUDE.md de lit-up-fr/bao-app.
+
+Relis notre conversation et sors uniquement ce qui mérite d'être écrit dans le
+CLAUDE.md du repo. Ne reprends que ce qui a été dit ici : n'invente rien et ne
+complète pas avec ce que tu sais du projet par ailleurs.
+
+Rends-moi un bloc markdown collable, avec seulement les rubriques qui ont
+quelque chose à dire :
+
+- Décisions prises : ce qui est tranché, avec le pourquoi en une ligne.
+- Étapes à venir : ce qui reste à faire, avec la priorité si on l'a dite.
+- À trancher : les questions restées ouvertes, et qui décide.
+- Pièges : ce qui nous a coûté du temps, et le correctif exact.
+- Conventions : toute règle nouvelle ou modifiée.
+
+Forme : français, phrases courtes, pas de tiret cadratin, chemins de fichiers
+et noms de tables exacts. Saute les rubriques vides. Si rien n'est à retenir,
+réponds simplement « rien à ajouter ».
+```
+
+Version courte, pour les petites sessions :
+
+```
+Récap CLAUDE.md : sors de cette conversation les décisions prises, les étapes
+à venir, les questions à trancher et les pièges rencontrés, en markdown
+collable. Rien que ce qui a été dit ici. Pas de tiret cadratin. Si rien :
+« rien à ajouter ».
+```
+
+Où ranger ce qui en sort : les décisions et les étapes dans §10, les pièges
+dans §8, les conventions dans §5 ou §6, les jalons livrés dans §11.
